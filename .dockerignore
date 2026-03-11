@@ -1,0 +1,8 @@
+node_modules
+.playwright-mcp
+playwright-report
+test-results
+tests
+*.png
+.claude
+.env

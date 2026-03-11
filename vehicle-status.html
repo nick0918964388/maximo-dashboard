@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>車輛可用狀態總覽 — 台鐵車輛管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   RESET & VARIABLES
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --font-display: 'Outfit', 'Noto Sans TC', sans-serif;
+  --font-body: 'Noto Sans TC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ═══ DARK THEME (Default) ═══ */
+[data-theme="dark"] {
+  --bg-primary: #06090f;
+  --bg-secondary: #0c1220;
+  --bg-card: rgba(14, 22, 38, 0.75);
+  --bg-card-hover: rgba(20, 32, 56, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --border-glass: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(232, 168, 73, 0.15);
+
+  --text-primary: #e8edf5;
+  --text-secondary: #7a8ba8;
+  --text-muted: #4a5873;
+  --text-accent: #e8a849;
+
+  --accent-copper: #e8a849;
+  --accent-copper-dim: rgba(232, 168, 73, 0.12);
+  --accent-copper-glow: rgba(232, 168, 73, 0.3);
+
+  --color-e: #4a90d9;
+  --color-e-bg: rgba(74, 144, 217, 0.1);
+  --color-e-border: rgba(74, 144, 217, 0.25);
+  --color-e-glow: rgba(74, 144, 217, 0.4);
+
+  --color-emu: #2dd4a0;
+  --color-emu-bg: rgba(45, 212, 160, 0.1);
+  --color-emu-border: rgba(45, 212, 160, 0.25);
+  --color-emu-glow: rgba(45, 212, 160, 0.4);
+
+  --color-dr: #f59e0b;
+  --color-dr-bg: rgba(245, 158, 11, 0.1);
+  --color-dr-border: rgba(245, 158, 11, 0.25);
+  --color-dr-glow: rgba(245, 158, 11, 0.4);
+
+  --color-pp: #a78bfa;
+  --color-pp-bg: rgba(167, 139, 250, 0.1);
+  --color-pp-border: rgba(167, 139, 250, 0.25);
+  --color-pp-glow: rgba(167, 139, 250, 0.4);
+
+  --color-ck: #f472b6;
+  --color-ck-bg: rgba(244, 114, 182, 0.1);
+  --color-ck-border: rgba(244, 114, 182, 0.25);
+  --color-ck-glow: rgba(244, 114, 182, 0.4);
+
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
+  --shadow-glow: 0 0 40px rgba(232, 168, 73, 0.06);
+
+  --card-footer-bg: rgba(0, 0, 0, 0.15);
+  --grid-line-color: rgba(255,255,255,0.012);
+  --scrollbar-color: #4a5873;
+
+  /* Traffic Light */
+  --tl-green: #2dd4a0;
+  --tl-green-bg: rgba(45, 212, 160, 0.15);
+  --tl-green-glow: 0 0 20px rgba(45, 212, 160, 0.4);
+  --tl-yellow: #f59e0b;
+  --tl-yellow-bg: rgba(245, 158, 11, 0.15);
+  --tl-yellow-glow: 0 0 20px rgba(245, 158, 11, 0.4);
+  --tl-red: #ef4444;
+  --tl-red-bg: rgba(239, 68, 68, 0.15);
+  --tl-red-glow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ═══ LIGHT THEME ═══ */
+[data-theme="light"] {
+  --bg-primary: #f0f2f7;
+  --bg-secondary: #e4e8f0;
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(0, 0, 0, 0.025);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(180, 120, 40, 0.2);
+
+  --text-primary: #1a2035;
+  --text-secondary: #556178;
+  --text-muted: #8d9bb5;
+  --text-accent: #b87a1a;
+
+  --accent-copper: #c07818;
+  --accent-copper-dim: rgba(192, 120, 24, 0.1);
+  --accent-copper-glow: rgba(192, 120, 24, 0.25);
+
+  --color-e: #2563eb;
+  --color-e-bg: rgba(37, 99, 235, 0.08);
+  --color-e-border: rgba(37, 99, 235, 0.2);
+  --color-e-glow: rgba(37, 99, 235, 0.3);
+
+  --color-emu: #059669;
+  --color-emu-bg: rgba(5, 150, 105, 0.08);
+  --color-emu-border: rgba(5, 150, 105, 0.2);
+  --color-emu-glow: rgba(5, 150, 105, 0.3);
+
+  --color-dr: #d97706;
+  --color-dr-bg: rgba(217, 119, 6, 0.08);
+  --color-dr-border: rgba(217, 119, 6, 0.2);
+  --color-dr-glow: rgba(217, 119, 6, 0.3);
+
+  --color-pp: #7c3aed;
+  --color-pp-bg: rgba(124, 58, 237, 0.08);
+  --color-pp-border: rgba(124, 58, 237, 0.2);
+  --color-pp-glow: rgba(124, 58, 237, 0.3);
+
+  --color-ck: #db2777;
+  --color-ck-bg: rgba(219, 39, 119, 0.08);
+  --color-ck-border: rgba(219, 39, 119, 0.2);
+  --color-ck-glow: rgba(219, 39, 119, 0.3);
+
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-glow: 0 0 30px rgba(192, 120, 24, 0.05);
+
+  --card-footer-bg: rgba(0, 0, 0, 0.03);
+  --grid-line-color: rgba(0,0,0,0.04);
+  --scrollbar-color: #c0c8d8;
+
+  /* Traffic Light — Light */
+  --tl-green: #059669;
+  --tl-green-bg: rgba(5, 150, 105, 0.12);
+  --tl-green-glow: 0 0 16px rgba(5, 150, 105, 0.3);
+  --tl-yellow: #d97706;
+  --tl-yellow-bg: rgba(217, 119, 6, 0.12);
+  --tl-yellow-glow: 0 0 16px rgba(217, 119, 6, 0.3);
+  --tl-red: #dc2626;
+  --tl-red-bg: rgba(220, 38, 38, 0.12);
+  --tl-red-glow: 0 0 16px rgba(220, 38, 38, 0.3);
+}
+
+html { scroll-behavior: smooth; }
+
+/* Theme transition */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease,
+              box-shadow 0.4s ease, opacity 0.4s ease !important;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══ BACKGROUND ATMOSPHERE ═══ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(74, 144, 217, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(232, 168, 73, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(45, 212, 160, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(192, 120, 24, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(5, 150, 105, 0.03) 0%, transparent 50%);
+}
+
+/* Grid texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-color) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══ LAYOUT ═══ */
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+/* ═══ HEADER ═══ */
+.header {
+  padding: 32px 0 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: 32px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+  border: 1px solid rgba(232, 168, 73, 0.2);
+  padding: 4px 12px;
+  border-radius: 100px;
+  width: fit-content;
+}
+
+.header-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent-copper);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--accent-copper-glow); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 6px transparent; }
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.15;
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ═══ BACK BUTTON ═══ */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.back-btn:hover {
+  color: var(--accent-copper);
+  border-color: var(--accent-copper);
+  box-shadow: 0 0 16px var(--accent-copper-dim);
+}
+
+.back-btn .arrow { font-size: 16px; }
+
+/* ═══ DEPOT SELECTOR ═══ */
+.depot-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.depot-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 10px 36px 10px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  transition: all 0.25s;
+  min-width: 150px;
+}
+
+.depot-select:hover { border-color: var(--accent-copper); }
+.depot-select:focus { outline: none; border-color: var(--accent-copper); box-shadow: 0 0 0 3px var(--accent-copper-dim); }
+
+.depot-select-wrapper::after {
+  content: '▾';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.depot-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ═══ THEME TOGGLE ═══ */
+.theme-toggle {
+  position: relative;
+  width: 56px;
+  height: 30px;
+  border-radius: 100px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent-copper);
+  box-shadow: 0 0 16px var(--accent-copper-dim);
+}
+
+.theme-toggle-track {
+  position: absolute;
+  inset: 3px;
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+[data-theme="light"] .theme-toggle-thumb {
+  left: calc(100% - 24px);
+  background: #f59e0b;
+}
+
+/* ═══ SUMMARY CARDS ═══ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  backdrop-filter: blur(24px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.summary-card:nth-child(1) { animation-delay: 0.1s; }
+.summary-card:nth-child(2) { animation-delay: 0.2s; }
+.summary-card:nth-child(3) { animation-delay: 0.3s; }
+.summary-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes card-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-copper), transparent);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.summary-card:hover::before { opacity: 1; }
+
+.summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.summary-icon.total { background: var(--color-e-bg); border: 1px solid var(--color-e-border); }
+.summary-icon.available { background: var(--tl-green-bg); border: 1px solid rgba(45, 212, 160, 0.3); }
+.summary-icon.transit { background: var(--tl-yellow-bg); border: 1px solid rgba(245, 158, 11, 0.3); }
+.summary-icon.unavailable { background: var(--tl-red-bg); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+.summary-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 400;
+}
+
+.summary-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.summary-value .unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.summary-value.green { color: var(--tl-green); }
+.summary-value.yellow { color: var(--tl-yellow); }
+.summary-value.red { color: var(--tl-red); }
+
+/* ═══ STATUS LEGEND ═══ */
+.status-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 16px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(24px);
+  margin-bottom: 32px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+
+/* ═══ CATEGORY FILTER ═══ */
+.category-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(24px);
+  margin-bottom: 32px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+}
+
+.category-filter .filter-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.cat-btn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border-glass);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cat-btn:hover {
+  border-color: var(--accent-copper);
+  color: var(--text-primary);
+}
+
+.cat-btn.active {
+  background: var(--accent-copper-dim);
+  border-color: var(--accent-copper);
+  color: var(--accent-copper);
+  box-shadow: 0 0 12px var(--accent-copper-dim);
+}
+
+.cat-btn .cat-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.legend-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.legend-dot-tl {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot-tl.green {
+  background: var(--tl-green);
+  box-shadow: var(--tl-green-glow);
+}
+
+.legend-dot-tl.yellow {
+  background: var(--tl-yellow);
+  box-shadow: var(--tl-yellow-glow);
+  animation: pulse-yellow 2s ease-in-out infinite;
+}
+
+.legend-dot-tl.red {
+  background: var(--tl-red);
+  box-shadow: var(--tl-red-glow);
+}
+
+.legend-label { font-weight: 500; color: var(--text-primary); }
+.legend-desc { font-size: 12px; color: var(--text-muted); }
+
+/* ═══ SECTION TITLES ═══ */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::before {
+  content: '';
+  width: 3px;
+  height: 20px;
+  background: var(--accent-copper);
+  border-radius: 4px;
+}
+
+/* ═══ VEHICLE GROUP ═══ */
+.vehicle-group {
+  margin-bottom: 36px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.vehicle-group:nth-child(1) { animation-delay: 0.6s; }
+.vehicle-group:nth-child(2) { animation-delay: 0.75s; }
+.vehicle-group:nth-child(3) { animation-delay: 0.9s; }
+.vehicle-group:nth-child(4) { animation-delay: 1.05s; }
+.vehicle-group:nth-child(5) { animation-delay: 1.4s; }
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.group-indicator {
+  width: 4px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.group-indicator.e { background: var(--color-e); box-shadow: 0 0 8px var(--color-e-glow); }
+.group-indicator.emu { background: var(--color-emu); box-shadow: 0 0 8px var(--color-emu-glow); }
+.group-indicator.dr { background: var(--color-dr); box-shadow: 0 0 8px var(--color-dr-glow); }
+.group-indicator.pp { background: var(--color-pp); box-shadow: 0 0 8px var(--color-pp-glow); }
+.group-indicator.ck { background: var(--color-ck); box-shadow: 0 0 8px var(--color-ck-glow); }
+
+.group-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.group-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  padding: 3px 10px;
+  border-radius: 100px;
+  margin-left: auto;
+}
+
+.group-stats {
+  display: flex;
+  gap: 12px;
+  margin-left: 8px;
+}
+
+.group-stat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-stat.green { color: var(--tl-green); background: var(--tl-green-bg); }
+.group-stat.yellow { color: var(--tl-yellow); background: var(--tl-yellow-bg); }
+.group-stat.red { color: var(--tl-red); background: var(--tl-red-bg); }
+
+/* ═══ TRAFFIC LIGHT GRID ═══ */
+.tl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.tl-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 20px 12px 16px;
+  backdrop-filter: blur(24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  position: relative;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.tl-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-4px);
+}
+
+.tl-card.status-green:hover { border-color: rgba(45, 212, 160, 0.3); }
+.tl-card.status-yellow:hover { border-color: rgba(245, 158, 11, 0.3); }
+.tl-card.status-red:hover { border-color: rgba(239, 68, 68, 0.3); }
+
+/* ═══ TRAFFIC LIGHT DOT ═══ */
+.tl-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.tl-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.tl-dot.green {
+  background: var(--tl-green);
+  box-shadow: var(--tl-green-glow);
+}
+
+.tl-dot.green::after { border-color: rgba(45, 212, 160, 0.15); }
+
+.tl-dot.yellow {
+  background: var(--tl-yellow);
+  box-shadow: var(--tl-yellow-glow);
+  animation: pulse-yellow 2.5s ease-in-out infinite;
+}
+
+.tl-dot.yellow::after { border-color: rgba(245, 158, 11, 0.15); }
+
+@keyframes pulse-yellow {
+  0%, 100% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 28px rgba(245, 158, 11, 0.7); }
+}
+
+.tl-dot.red {
+  background: var(--tl-red);
+  box-shadow: var(--tl-red-glow);
+  animation: glow-red 3s ease-in-out infinite;
+}
+
+.tl-dot.red::after { border-color: rgba(239, 68, 68, 0.15); }
+
+@keyframes glow-red {
+  0%, 100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.6); }
+}
+
+.tl-card:hover .tl-dot.green { box-shadow: 0 0 32px rgba(45, 212, 160, 0.6); }
+.tl-card:hover .tl-dot.yellow { box-shadow: 0 0 32px rgba(245, 158, 11, 0.6); }
+.tl-card:hover .tl-dot.red { box-shadow: 0 0 32px rgba(239, 68, 68, 0.6); }
+
+/* ═══ VEHICLE ID LABEL ═══ */
+.tl-id {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.tl-status-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.5px;
+}
+
+.tl-status-label.green { color: var(--tl-green); background: var(--tl-green-bg); }
+.tl-status-label.yellow { color: var(--tl-yellow); background: var(--tl-yellow-bg); }
+.tl-status-label.red { color: var(--tl-red); background: var(--tl-red-bg); }
+
+/* Grey fallback — treat as red */
+.tl-dot.grey {
+  background: var(--tl-red);
+  box-shadow: var(--tl-red-glow);
+}
+.tl-dot.grey::after { border-color: rgba(239, 68, 68, 0.15); }
+.tl-status-label.grey { color: var(--tl-red); background: var(--tl-red-bg); }
+.tl-card.status-grey:hover { border-color: rgba(239, 68, 68, 0.3); }
+
+/* ═══ TOOLTIP ═══ */
+.tl-tooltip {
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  min-width: 200px;
+}
+
+.tl-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tl-tooltip-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tl-tooltip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.tl-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 3px 0;
+}
+
+.tl-tooltip-label { color: var(--text-muted); }
+.tl-tooltip-value { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
+
+/* ═══ FOOTER ═══ */
+.app-footer {
+  text-align: center;
+  padding: 24px 0;
+  border-top: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.app-footer span { color: var(--accent-copper); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 1100px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .status-legend { flex-wrap: wrap; gap: 16px; }
+}
+
+@media (max-width: 640px) {
+  .app { padding: 0 16px 60px; }
+  .header { flex-direction: column; align-items: flex-start; }
+  .header-title { font-size: 28px; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .tl-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+  .tl-dot { width: 36px; height: 36px; }
+  .status-legend { flex-direction: column; gap: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-badge" id="headerBadge">全部機務段 • 狀態監控</div>
+      <h1 class="header-title">車輛可用狀態總覽</h1>
+      <p class="header-subtitle">各車型紅綠燈狀態即時監控 — 可用 / 回送 / 不可用</p>
+    </div>
+    <div class="header-right">
+      <a href="index.html" class="back-btn">
+        <span class="arrow">←</span>
+        <span>返回總覽</span>
+      </a>
+      <div class="depot-select-wrapper">
+        <select class="depot-select" id="depotSelect">
+          <option value="all">全部機務段</option>
+          <option value="MGY00">七堵機務段</option>
+          <option value="MHY00">臺北機務段</option>
+          <option value="MHY10">新竹機務段</option>
+          <option value="MMY00">彰化機務段</option>
+          <option value="MMY20">嘉義機務段</option>
+          <option value="MPY00">高雄機務段</option>
+          <option value="MYY00">花蓮機務段</option>
+          <option value="MIY00">臺東機務段</option>
+        </select>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="切換深淺色主題">
+        <div class="theme-toggle-track">
+          <div class="theme-toggle-thumb" id="themeThumb">🌙</div>
+        </div>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ SUMMARY ═══ -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card">
+      <div class="summary-icon total">🚆</div>
+      <div class="summary-label">車輛總數</div>
+      <div class="summary-value"><span class="count-up" id="totalCount">0</span><span class="unit">輛</span></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon available">✅</div>
+      <div class="summary-label">可用</div>
+      <div class="summary-value green"><span class="count-up" id="greenCount">0</span><span class="unit">輛</span></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon transit">🔄</div>
+      <div class="summary-label">回送中</div>
+      <div class="summary-value yellow"><span class="count-up" id="yellowCount">0</span><span class="unit">輛</span></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon unavailable">🚫</div>
+      <div class="summary-label">不可用</div>
+      <div class="summary-value red"><span class="count-up" id="redCount">0</span><span class="unit">輛</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ LEGEND ═══ -->
+  <div class="status-legend">
+    <div class="legend-entry">
+      <div class="legend-dot-tl green"></div>
+      <div><span class="legend-label">可用</span> <span class="legend-desc">— 可營運</span></div>
+    </div>
+    <div class="legend-entry">
+      <div class="legend-dot-tl yellow"></div>
+      <div><span class="legend-label">回送中</span> <span class="legend-desc">— 不可營運但可駕駛</span></div>
+    </div>
+    <div class="legend-entry">
+      <div class="legend-dot-tl red"></div>
+      <div><span class="legend-label">不可用</span> <span class="legend-desc">— 檢修 / 待料 / 待報廢</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ CATEGORY FILTER ═══ -->
+  <div class="category-filter" id="categoryFilter">
+    <span class="filter-label">分類</span>
+    <button class="cat-btn active" data-cat="all" id="catAll">全部<span class="cat-count" id="catAllCount"></span></button>
+    <button class="cat-btn" data-cat="power" id="catPower">動力車<span class="cat-count" id="catPowerCount"></span></button>
+    <button class="cat-btn" data-cat="passenger" id="catPassenger">客車<span class="cat-count" id="catPassengerCount"></span></button>
+  </div>
+
+  <!-- ═══ VEHICLE GROUPS ═══ -->
+  <div id="vehicleGroups"></div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="app-footer">
+    <span id="footerDepot">全部機務段</span> 車輛可用狀態管理系統 — 資料更新時間 <span id="footerTime"></span>
+  </div>
+
+</div>
+
+<!-- Tooltip -->
+<div class="tl-tooltip" id="tooltip"></div>
+
+<!-- ═══ API Layer ═══ -->
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/api-client.js"></script>
+<script src="js/mock-data.js"></script>
+<script src="js/data-service.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const depotMeta = MOCK_DEPOT_META;
+let currentDepot = 'all';
+let currentCategory = 'all'; // 'all' | 'power' | 'passenger'
+let lastResponseData = null; // cache for re-rendering on category change
+
+// ═══════════════════════════════════════════
+// COUNTER ANIMATION
+// ═══════════════════════════════════════════
+function animateCounter(el, target) {
+  const duration = 1200;
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ═══════════════════════════════════════════
+// VEHICLE CARD HELPER
+// ═══════════════════════════════════════════
+function getVehicleDesc(v) {
+  // API mode: description in v.dynamic; Mock mode: v.statusDesc
+  if (v.dynamic && v.dynamic.description) return v.dynamic.description;
+  return v.statusDesc || v.statusLabel || '';
+}
+
+function getVehicleEta(v) {
+  return v.eta || '—';
+}
+
+function renderVehicleCard(v, cardIdx) {
+  const delay = (0.03 * cardIdx).toFixed(2);
+  const desc = getVehicleDesc(v).replace(/"/g, '&quot;');
+  const eta = getVehicleEta(v).replace(/"/g, '&quot;');
+  return `
+            <a href="vehicle-history.html?id=${encodeURIComponent(v.id)}" class="tl-card status-${v.statusColor}"
+               style="animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s forwards;"
+               data-vehicle="${v.id}" data-status="${v.statusLabel}" data-desc="${desc}" data-eta="${eta}" data-color="${v.statusColor}">
+              <div class="tl-dot ${v.statusColor}"></div>
+              <div class="tl-id">${v.id}</div>
+              <div class="tl-status-label ${v.statusColor}">${v.statusLabel}</div>
+            </a>`;
+}
+
+// ═══════════════════════════════════════════
+// CATEGORY FILTER HELPERS
+// ═══════════════════════════════════════════
+function getVehicleCategory(v) {
+  // eq11: RSTL = 動力車, RSTA = 客車
+  if (v.eq11 === 'RSTL') return 'power';
+  if (v.eq11 === 'RSTA') return 'passenger';
+  // Fallback: no eq11 → treat as power (車組 level)
+  return 'power';
+}
+
+function filterVehicles(vehicles, cat) {
+  if (cat === 'all') return vehicles;
+  return vehicles.filter(v => getVehicleCategory(v) === cat);
+}
+
+function updateCategoryCounts(byType) {
+  let allCount = 0, powerCount = 0, passengerCount = 0;
+  byType.forEach(bt => {
+    bt.vehicles.forEach(v => {
+      allCount++;
+      const cat = getVehicleCategory(v);
+      if (cat === 'power') powerCount++;
+      else passengerCount++;
+    });
+  });
+  document.getElementById('catAllCount').textContent = `(${allCount})`;
+  document.getElementById('catPowerCount').textContent = `(${powerCount})`;
+  document.getElementById('catPassengerCount').textContent = `(${passengerCount})`;
+}
+
+// ═══════════════════════════════════════════
+// RENDER (async — via DataService)
+// ═══════════════════════════════════════════
+async function renderAll() {
+  showLoading('vehicleGroups');
+
+  try {
+    const resp = await dataService.getVehicleStatus('all', currentDepot);
+    lastResponseData = resp.data;
+    renderView();
+  } catch (err) {
+    console.error('[vehicle-status] renderAll 失敗:', err);
+    showError('vehicleGroups', '載入車輛狀態失敗：' + err.message, renderAll);
+  }
+}
+
+function renderView() {
+    const { summary, byType } = lastResponseData;
+    const cat = currentCategory;
+
+    // Update header
+    const isAll = currentDepot === 'all';
+    const selectEl = document.getElementById('depotSelect');
+    const depotLabel = isAll ? '全部機務段' : selectEl.options[selectEl.selectedIndex].text;
+    document.getElementById('headerBadge').textContent = depotLabel + ' • 狀態監控';
+    document.getElementById('footerDepot').textContent = depotLabel;
+    const now = new Date();
+    document.getElementById('footerTime').textContent =
+      now.getFullYear() + '/' +
+      String(now.getMonth() + 1).padStart(2, '0') + '/' +
+      String(now.getDate()).padStart(2, '0') + ' ' +
+      String(now.getHours()).padStart(2, '0') + ':' +
+      String(now.getMinutes()).padStart(2, '0');
+
+    // Update category counts (always based on full data)
+    updateCategoryCounts(byType);
+
+    // Compute filtered summary
+    let fTotal = 0, fGreen = 0, fYellow = 0, fRed = 0;
+    byType.forEach(bt => {
+      filterVehicles(bt.vehicles, cat).forEach(v => {
+        fTotal++;
+        if (v.statusColor === 'green') fGreen++;
+        else if (v.statusColor === 'yellow') fYellow++;
+        else fRed++;
+      });
+    });
+
+    animateCounter(document.getElementById('totalCount'), fTotal);
+    animateCounter(document.getElementById('greenCount'), fGreen);
+    animateCounter(document.getElementById('yellowCount'), fYellow);
+    animateCounter(document.getElementById('redCount'), fRed);
+
+    const container = document.getElementById('vehicleGroups');
+    let html = '';
+    let cardIdx = 0;
+
+    if (isAll) {
+      // ═══ 全部機務段：依機務段分組 ═══
+      const byDepotMap = {};
+      byType.forEach(bt => {
+        filterVehicles(bt.vehicles, cat).forEach(v => {
+          const dc = v.depot || 'unknown';
+          if (!byDepotMap[dc]) {
+            byDepotMap[dc] = { depot: dc, depotName: v.depotName || dc, total: 0, green: 0, yellow: 0, red: 0, vehicles: [] };
+          }
+          byDepotMap[dc].vehicles.push(v);
+          byDepotMap[dc].total++;
+          if (v.statusColor === 'green') byDepotMap[dc].green++;
+          else if (v.statusColor === 'yellow') byDepotMap[dc].yellow++;
+          else byDepotMap[dc].red++;
+        });
+      });
+
+      const depotOrder = ['MGY00', 'MHY00', 'MHY10', 'MMY00', 'MMY20', 'MPY00', 'MYY00', 'MIY00'];
+      const byDepot = Object.values(byDepotMap).sort((a, b) => {
+        const ia = depotOrder.indexOf(a.depot);
+        const ib = depotOrder.indexOf(b.depot);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+
+      byDepot.forEach(dg => {
+        if (!dg.vehicles.length) return;
+        dg.vehicles.sort((a, b) => sortByVehicleId(a.id, b.id));
+
+        html += `
+        <div class="vehicle-group">
+          <div class="group-header">
+            <div class="group-indicator" style="background: var(--accent-copper); box-shadow: 0 0 8px var(--accent-copper-glow);"></div>
+            <div class="group-name">${dg.depotName}</div>
+            <div class="group-stats">
+              <div class="group-stat green">${dg.green} 可用</div>
+              ${dg.yellow ? `<div class="group-stat yellow">${dg.yellow} 回送</div>` : ''}
+              ${dg.red ? `<div class="group-stat red">${dg.red} 不可用</div>` : ''}
+            </div>
+            <div class="group-count">${dg.total} 輛</div>
+          </div>
+          <div class="tl-grid">`;
+
+        dg.vehicles.forEach(v => {
+          html += renderVehicleCard(v, cardIdx);
+          cardIdx++;
+        });
+
+        html += `
+          </div>
+        </div>`;
+      });
+
+    } else {
+      // ═══ 個別機務段：依車型分組 ═══
+      byType.forEach(bt => {
+        const filtered = filterVehicles(bt.vehicles, cat);
+        if (!filtered.length) return;
+        let btGreen = 0, btYellow = 0, btRed = 0;
+        filtered.forEach(v => {
+          if (v.statusColor === 'green') btGreen++;
+          else if (v.statusColor === 'yellow') btYellow++;
+          else btRed++;
+        });
+
+        html += `
+        <div class="vehicle-group">
+          <div class="group-header">
+            <div class="group-indicator ${bt.type}"></div>
+            <div class="group-name">${getTypeLabelFull(bt.type)}</div>
+            <div class="group-stats">
+              <div class="group-stat green">${btGreen} 可用</div>
+              ${btYellow ? `<div class="group-stat yellow">${btYellow} 回送</div>` : ''}
+              ${btRed ? `<div class="group-stat red">${btRed} 不可用</div>` : ''}
+            </div>
+            <div class="group-count">${filtered.length} 輛</div>
+          </div>
+          <div class="tl-grid">`;
+
+        filtered.forEach(v => {
+          html += renderVehicleCard(v, cardIdx);
+          cardIdx++;
+        });
+
+        html += `
+          </div>
+        </div>`;
+      });
+    }
+
+    container.innerHTML = html;
+    setupTooltips();
+}
+
+// ═══════════════════════════════════════════
+// TOOLTIP
+// ═══════════════════════════════════════════
+function setupTooltips() {
+  const tooltip = document.getElementById('tooltip');
+  const cards = document.querySelectorAll('.tl-card');
+
+  cards.forEach(card => {
+    card.addEventListener('mouseenter', (e) => {
+      const vid = card.dataset.vehicle;
+      const status = card.dataset.status;
+      const desc = card.dataset.desc;
+      const eta = card.dataset.eta;
+      const color = card.dataset.color;
+
+      const dotColors = { green: 'var(--tl-green)', yellow: 'var(--tl-yellow)', red: 'var(--tl-red)' };
+
+      tooltip.innerHTML = `
+        <div class="tl-tooltip-title">
+          <div class="tl-tooltip-dot" style="background: ${dotColors[color]}"></div>
+          ${vid}
+        </div>
+        <div class="tl-tooltip-row">
+          <span class="tl-tooltip-label">狀態</span>
+          <span class="tl-tooltip-value">${status}</span>
+        </div>
+        <div class="tl-tooltip-row">
+          <span class="tl-tooltip-label">說明</span>
+          <span class="tl-tooltip-value">${desc}</span>
+        </div>
+        <div class="tl-tooltip-row">
+          <span class="tl-tooltip-label">預計恢復</span>
+          <span class="tl-tooltip-value">${eta}</span>
+        </div>
+      `;
+      tooltip.classList.add('visible');
+    });
+
+    card.addEventListener('mousemove', (e) => {
+      const x = e.clientX + 16;
+      const y = e.clientY + 16;
+      const rect = tooltip.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width - 16;
+      const maxY = window.innerHeight - rect.height - 16;
+      tooltip.style.left = Math.min(x, maxX) + 'px';
+      tooltip.style.top = Math.min(y, maxY) + 'px';
+    });
+
+    card.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('visible');
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// DEPOT SWITCHING
+// ═══════════════════════════════════════════
+document.getElementById('depotSelect').addEventListener('change', (e) => {
+  currentDepot = e.target.value;
+  renderAll();
+});
+
+// ═══════════════════════════════════════════
+// CATEGORY FILTER SWITCHING
+// ═══════════════════════════════════════════
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentCategory = btn.dataset.cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (lastResponseData) {
+      renderView();
+    }
+  });
+});
+
+// ═══════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════
+function getTheme() {
+  return localStorage.getItem('car-dashboard-theme') || 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.classList.add('theme-transition');
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('car-dashboard-theme', theme);
+  document.getElementById('themeThumb').textContent = theme === 'dark' ? '🌙' : '☀️';
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transition');
+  }, 450);
+}
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = getTheme();
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.getElementById('themeThumb').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+  renderAll();
+});
+</script>
+</body>
+</html>

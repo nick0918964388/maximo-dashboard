@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "${APP_PORT:-8880}:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./vehicle-status.html:/usr/share/nginx/html/vehicle-status.html:ro
+      - ./vehicle-history.html:/usr/share/nginx/html/vehicle-history.html:ro
+      - ./js:/usr/share/nginx/html/js:ro
+      - ./favicon.svg:/usr/share/nginx/html/favicon.svg:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    restart: unless-stopped

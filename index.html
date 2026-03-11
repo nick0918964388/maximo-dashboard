@@ -1,0 +1,3119 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>七堵機務段 — 車輛運用總覽</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   RESET & VARIABLES
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --font-display: 'Outfit', 'Noto Sans TC', sans-serif;
+  --font-body: 'Noto Sans TC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ═══ DARK THEME (Default) ═══ */
+[data-theme="dark"] {
+  --bg-primary: #06090f;
+  --bg-secondary: #0c1220;
+  --bg-card: rgba(14, 22, 38, 0.75);
+  --bg-card-hover: rgba(20, 32, 56, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --border-glass: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(232, 168, 73, 0.15);
+
+  --text-primary: #e8edf5;
+  --text-secondary: #7a8ba8;
+  --text-muted: #4a5873;
+  --text-accent: #e8a849;
+
+  --accent-copper: #e8a849;
+  --accent-copper-dim: rgba(232, 168, 73, 0.12);
+  --accent-copper-glow: rgba(232, 168, 73, 0.3);
+
+  --color-e: #4a90d9;
+  --color-e-bg: rgba(74, 144, 217, 0.1);
+  --color-e-border: rgba(74, 144, 217, 0.25);
+  --color-e-glow: rgba(74, 144, 217, 0.4);
+
+  --color-emu: #2dd4a0;
+  --color-emu-bg: rgba(45, 212, 160, 0.1);
+  --color-emu-border: rgba(45, 212, 160, 0.25);
+  --color-emu-glow: rgba(45, 212, 160, 0.4);
+
+  --color-dr: #f59e0b;
+  --color-dr-bg: rgba(245, 158, 11, 0.1);
+  --color-dr-border: rgba(245, 158, 11, 0.25);
+  --color-dr-glow: rgba(245, 158, 11, 0.4);
+
+  --color-pp: #a78bfa;
+  --color-pp-bg: rgba(167, 139, 250, 0.1);
+  --color-pp-border: rgba(167, 139, 250, 0.25);
+  --color-pp-glow: rgba(167, 139, 250, 0.4);
+
+  --color-ck: #f472b6;
+  --color-ck-bg: rgba(244, 114, 182, 0.1);
+  --color-ck-border: rgba(244, 114, 182, 0.25);
+  --color-ck-glow: rgba(244, 114, 182, 0.4);
+
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
+  --shadow-glow: 0 0 40px rgba(232, 168, 73, 0.06);
+
+  --donut-border: rgba(6, 9, 15, 0.8);
+  --timeline-bar-text: rgba(255, 255, 255, 0.9);
+  --card-footer-bg: rgba(0, 0, 0, 0.15);
+  --grid-line-color: rgba(255,255,255,0.012);
+  --grid-tick-color: rgba(255,255,255,0.03);
+  --scrollbar-color: #4a5873;
+}
+
+/* ═══ LIGHT THEME ═══ */
+[data-theme="light"] {
+  --bg-primary: #f0f2f7;
+  --bg-secondary: #e4e8f0;
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(0, 0, 0, 0.025);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(180, 120, 40, 0.2);
+
+  --text-primary: #1a2035;
+  --text-secondary: #556178;
+  --text-muted: #8d9bb5;
+  --text-accent: #b87a1a;
+
+  --accent-copper: #c07818;
+  --accent-copper-dim: rgba(192, 120, 24, 0.1);
+  --accent-copper-glow: rgba(192, 120, 24, 0.25);
+
+  --color-e: #2563eb;
+  --color-e-bg: rgba(37, 99, 235, 0.08);
+  --color-e-border: rgba(37, 99, 235, 0.2);
+  --color-e-glow: rgba(37, 99, 235, 0.3);
+
+  --color-emu: #059669;
+  --color-emu-bg: rgba(5, 150, 105, 0.08);
+  --color-emu-border: rgba(5, 150, 105, 0.2);
+  --color-emu-glow: rgba(5, 150, 105, 0.3);
+
+  --color-dr: #d97706;
+  --color-dr-bg: rgba(217, 119, 6, 0.08);
+  --color-dr-border: rgba(217, 119, 6, 0.2);
+  --color-dr-glow: rgba(217, 119, 6, 0.3);
+
+  --color-pp: #7c3aed;
+  --color-pp-bg: rgba(124, 58, 237, 0.08);
+  --color-pp-border: rgba(124, 58, 237, 0.2);
+  --color-pp-glow: rgba(124, 58, 237, 0.3);
+
+  --color-ck: #db2777;
+  --color-ck-bg: rgba(219, 39, 119, 0.08);
+  --color-ck-border: rgba(219, 39, 119, 0.2);
+  --color-ck-glow: rgba(219, 39, 119, 0.3);
+
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-glow: 0 0 30px rgba(192, 120, 24, 0.05);
+
+  --donut-border: rgba(255, 255, 255, 0.9);
+  --timeline-bar-text: rgba(255, 255, 255, 0.95);
+  --card-footer-bg: rgba(0, 0, 0, 0.03);
+  --grid-line-color: rgba(0,0,0,0.04);
+  --grid-tick-color: rgba(0,0,0,0.06);
+  --scrollbar-color: #c0c8d8;
+}
+
+html { scroll-behavior: smooth; }
+
+/* Theme transition */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease,
+              box-shadow 0.4s ease, opacity 0.4s ease !important;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════
+   BACKGROUND ATMOSPHERE
+   ═══════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(74, 144, 217, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(232, 168, 73, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(45, 212, 160, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(192, 120, 24, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(5, 150, 105, 0.03) 0%, transparent 50%);
+}
+
+/* Grid texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-color) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════ */
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════ */
+.header {
+  padding: 32px 0 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: 32px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+  border: 1px solid rgba(232, 168, 73, 0.2);
+  padding: 4px 12px;
+  border-radius: 100px;
+  width: fit-content;
+}
+
+.header-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent-copper);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--accent-copper-glow); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 6px transparent; }
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.15;
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Date Picker */
+.date-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.date-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.date-btn:hover { color: var(--accent-copper); background: var(--accent-copper-dim); }
+
+.date-display {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 10px 16px;
+  border-left: 1px solid var(--border-glass);
+  border-right: 1px solid var(--border-glass);
+  min-width: 140px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.date-display:hover { color: var(--accent-copper); }
+
+/* Filter Chips */
+.filter-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  user-select: none;
+}
+
+.chip:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+.chip.active-all {
+  background: linear-gradient(135deg, rgba(232, 168, 73, 0.15), rgba(232, 168, 73, 0.05));
+  border-color: var(--accent-copper);
+  color: var(--accent-copper);
+  box-shadow: 0 0 20px rgba(232, 168, 73, 0.1);
+}
+
+.chip.active-e {
+  background: var(--color-e-bg);
+  border-color: var(--color-e-border);
+  color: var(--color-e);
+  box-shadow: 0 0 20px rgba(74, 144, 217, 0.1);
+}
+
+.chip.active-emu {
+  background: var(--color-emu-bg);
+  border-color: var(--color-emu-border);
+  color: var(--color-emu);
+  box-shadow: 0 0 20px rgba(45, 212, 160, 0.1);
+}
+
+.chip.active-dr {
+  background: var(--color-dr-bg);
+  border-color: var(--color-dr-border);
+  color: var(--color-dr);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+}
+
+.chip.active-pp {
+  background: var(--color-pp-bg);
+  border-color: var(--color-pp-border);
+  color: var(--color-pp);
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.1);
+}
+
+.chip.active-ck {
+  background: var(--color-ck-bg);
+  border-color: var(--color-ck-border);
+  color: var(--color-ck);
+  box-shadow: 0 0 20px rgba(244, 114, 182, 0.1);
+}
+
+/* ═══════════════════════════════════════════
+   SUMMARY CARDS
+   ═══════════════════════════════════════════ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  backdrop-filter: blur(24px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.summary-card:nth-child(1) { animation-delay: 0.1s; }
+.summary-card:nth-child(2) { animation-delay: 0.2s; }
+.summary-card:nth-child(3) { animation-delay: 0.3s; }
+.summary-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes card-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-card { cursor: pointer; }
+.summary-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* Drill-down overlay */
+.drill-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.drill-overlay.open { display: flex; }
+.drill-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(24px);
+  width: min(680px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: card-in 0.3s ease forwards;
+  opacity: 0;
+  transform: translateY(12px);
+}
+.drill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-glass);
+}
+.drill-header-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.drill-header-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.drill-close {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.drill-close:hover { color: var(--text-primary); background: var(--glass-bg); }
+.drill-body {
+  overflow-y: auto;
+  padding: 12px 24px 18px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-glass) transparent;
+}
+.drill-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.drill-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-glass);
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+}
+.drill-table td {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.drill-table tr:hover td { color: var(--text-primary); background: rgba(255,255,255,0.02); }
+.drill-table .type-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.drill-table .type-dot.e { background: var(--color-e); }
+.drill-table .type-dot.emu { background: var(--color-emu); }
+.drill-table .type-dot.dr { background: var(--color-dr); }
+.drill-table td.num { text-align: right; }
+.drill-table td.km { color: var(--accent-copper); font-weight: 600; text-align: right; }
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-copper), transparent);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.summary-card:hover::before { opacity: 1; }
+
+.summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.summary-icon.vehicles { background: var(--color-e-bg); border: 1px solid var(--color-e-border); }
+.summary-icon.mileage { background: var(--accent-copper-dim); border: 1px solid rgba(232, 168, 73, 0.2); }
+.summary-icon.active { background: var(--color-emu-bg); border: 1px solid var(--color-emu-border); }
+.summary-icon.avg { background: var(--color-dr-bg); border: 1px solid var(--color-dr-border); }
+
+.summary-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 400;
+}
+
+.summary-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.summary-value .unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.summary-change {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.summary-change.up { color: var(--color-emu); background: var(--color-emu-bg); }
+.summary-change.down { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+/* ═══════════════════════════════════════════
+   SECTION TITLES
+   ═══════════════════════════════════════════ */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::before {
+  content: '';
+  width: 3px;
+  height: 20px;
+  background: var(--accent-copper);
+  border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════
+   TWO-COLUMN CHARTS
+   ═══════════════════════════════════════════ */
+.charts-row {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  margin-bottom: 36px;
+}
+
+.chart-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  backdrop-filter: blur(24px);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+
+.donut-wrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 16px auto 24px;
+}
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.donut-center-value {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.donut-center-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-dot.e { background: var(--color-e); }
+.legend-dot.emu { background: var(--color-emu); }
+.legend-dot.dr { background: var(--color-dr); }
+.legend-dot.pp { background: var(--color-pp); }
+.legend-dot.ck { background: var(--color-ck); }
+
+.legend-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Mileage bars */
+.mileage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.mileage-list::-webkit-scrollbar { width: 4px; }
+.mileage-list::-webkit-scrollbar-track { background: transparent; }
+.mileage-list::-webkit-scrollbar-thumb { background: var(--scrollbar-color); border-radius: 4px; }
+
+.mileage-item {
+  display: grid;
+  grid-template-columns: 100px 1fr 70px;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  transition: background 0.2s;
+}
+.mileage-item:hover {
+  background: var(--glass-bg);
+}
+.mileage-item.active {
+  background: var(--glass-bg);
+  box-shadow: inset 0 0 0 1px var(--accent-copper-dim);
+}
+
+.mileage-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mileage-bar-track {
+  height: 22px;
+  background: var(--bg-glass);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mileage-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  width: 0;
+}
+
+.mileage-bar-fill.type-e {
+  background: linear-gradient(90deg, var(--color-e), rgba(74, 144, 217, 0.6));
+  box-shadow: 0 0 12px rgba(74, 144, 217, 0.2);
+}
+
+.mileage-bar-fill.type-emu {
+  background: linear-gradient(90deg, var(--color-emu), rgba(45, 212, 160, 0.6));
+  box-shadow: 0 0 12px rgba(45, 212, 160, 0.2);
+}
+
+.mileage-bar-fill.type-dr {
+  background: linear-gradient(90deg, var(--color-dr), rgba(245, 158, 11, 0.6));
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.mileage-bar-fill.type-pp {
+  background: linear-gradient(90deg, var(--color-pp), rgba(167, 139, 250, 0.6));
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.2);
+}
+
+.mileage-bar-fill.type-ck {
+  background: linear-gradient(90deg, var(--color-ck), rgba(244, 114, 182, 0.6));
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.2);
+}
+
+.mileage-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════
+   VEHICLE OPERATION CARDS
+   ═══════════════════════════════════════════ */
+.vehicles-section { margin-bottom: 36px; }
+.vehicles-section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.vehicles-section-header .section-title { margin-bottom: 0; }
+.vehicle-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s;
+}
+.vehicle-search:focus-within {
+  border-color: var(--accent-copper);
+}
+.vehicle-search-icon { color: var(--text-tertiary); font-size: 14px; }
+.vehicle-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 140px;
+}
+.vehicle-search input::placeholder { color: var(--text-tertiary); }
+.vehicle-search-clear {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+}
+.vehicle-search-clear:hover { color: var(--text-secondary); }
+.vehicle-search-clear.visible { display: block; }
+.vehicle-search-count {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.vehicles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 16px;
+}
+
+.vehicle-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  backdrop-filter: blur(24px);
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.vehicle-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-3px);
+}
+
+.vehicle-card.type-e:hover { border-color: var(--color-e-border); box-shadow: 0 4px 30px rgba(74, 144, 217, 0.1); }
+.vehicle-card.type-emu:hover { border-color: var(--color-emu-border); box-shadow: 0 4px 30px rgba(45, 212, 160, 0.1); }
+.vehicle-card.type-dr:hover { border-color: var(--color-dr-border); box-shadow: 0 4px 30px rgba(245, 158, 11, 0.1); }
+.vehicle-card.type-pp:hover { border-color: var(--color-pp-border); box-shadow: 0 4px 30px rgba(167, 139, 250, 0.1); }
+.vehicle-card.type-ck:hover { border-color: var(--color-ck-border); box-shadow: 0 4px 30px rgba(244, 114, 182, 0.1); }
+
+.vehicle-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 14px;
+}
+
+.vehicle-card-id-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicle-type-indicator {
+  width: 4px;
+  height: 36px;
+  border-radius: 4px;
+}
+
+.type-e .vehicle-type-indicator { background: var(--color-e); box-shadow: 0 0 8px var(--color-e-glow); }
+.type-emu .vehicle-type-indicator { background: var(--color-emu); box-shadow: 0 0 8px var(--color-emu-glow); }
+.type-dr .vehicle-type-indicator { background: var(--color-dr); box-shadow: 0 0 8px var(--color-dr-glow); }
+.type-pp .vehicle-type-indicator { background: var(--color-pp); box-shadow: 0 0 8px var(--color-pp-glow); }
+.type-ck .vehicle-type-indicator { background: var(--color-ck); box-shadow: 0 0 8px var(--color-ck-glow); }
+
+.vehicle-card-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vehicle-card-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.vehicle-card-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.v-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
+.v-badge.ctrl-a { background: var(--color-e-bg); color: var(--color-e); border: 1px solid var(--color-e-border); }
+.v-badge.ctrl-b { background: var(--color-dr-bg); color: var(--color-dr); border: 1px solid var(--color-dr-border); }
+.v-badge.ctrl-c { background: var(--color-emu-bg); color: var(--color-emu); border: 1px solid var(--color-emu-border); }
+
+.v-badge.days {
+  background: var(--accent-copper-dim);
+  color: var(--accent-copper);
+  border: 1px solid rgba(232, 168, 73, 0.2);
+}
+
+/* Route Timeline */
+.vehicle-route {
+  padding: 0 24px 8px;
+}
+
+.route-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 16px 0 8px;
+}
+
+.route-line {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+}
+
+.type-e .route-line { background: linear-gradient(90deg, var(--color-e), rgba(74, 144, 217, 0.2)); }
+.type-emu .route-line { background: linear-gradient(90deg, var(--color-emu), rgba(45, 212, 160, 0.2)); }
+.type-dr .route-line { background: linear-gradient(90deg, var(--color-dr), rgba(245, 158, 11, 0.2)); }
+.type-pp .route-line { background: linear-gradient(90deg, var(--color-pp), rgba(167, 139, 250, 0.2)); }
+.type-ck .route-line { background: linear-gradient(90deg, var(--color-ck), rgba(244, 114, 182, 0.2)); }
+
+.route-stops {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.route-stop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.stop-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: var(--bg-primary);
+  transition: all 0.3s;
+}
+
+.type-e .stop-dot { border-color: var(--color-e); }
+.type-emu .stop-dot { border-color: var(--color-emu); }
+.type-dr .stop-dot { border-color: var(--color-dr); }
+.type-pp .stop-dot { border-color: var(--color-pp); }
+.type-ck .stop-dot { border-color: var(--color-ck); }
+
+.stop-dot.first, .stop-dot.last {
+  width: 14px;
+  height: 14px;
+}
+
+.type-e .stop-dot.first, .type-e .stop-dot.last { background: var(--color-e); box-shadow: 0 0 8px var(--color-e-glow); }
+.type-emu .stop-dot.first, .type-emu .stop-dot.last { background: var(--color-emu); box-shadow: 0 0 8px var(--color-emu-glow); }
+.type-dr .stop-dot.first, .type-dr .stop-dot.last { background: var(--color-dr); box-shadow: 0 0 8px var(--color-dr-glow); }
+.type-pp .stop-dot.first, .type-pp .stop-dot.last { background: var(--color-pp); box-shadow: 0 0 8px var(--color-pp-glow); }
+.type-ck .stop-dot.first, .type-ck .stop-dot.last { background: var(--color-ck); box-shadow: 0 0 8px var(--color-ck-glow); }
+
+.stop-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.stop-label.first, .stop-label.last {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Card footer */
+.vehicle-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-glass);
+  background: var(--card-footer-bg);
+}
+
+.footer-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footer-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.footer-stat-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.footer-mileage {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.type-e .footer-mileage { color: var(--color-e); }
+.type-emu .footer-mileage { color: var(--color-emu); }
+.type-dr .footer-mileage { color: var(--color-dr); }
+.type-pp .footer-mileage { color: var(--color-pp); }
+.type-ck .footer-mileage { color: var(--color-ck); }
+
+.footer-mileage .km {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* ═══ Vehicle Status (running / completed / not-started) ═══ */
+.vehicle-card.status-running {
+  border-color: #2dd4a0;
+  box-shadow: 0 0 0 1.5px #2dd4a0, 0 2px 20px rgba(45, 212, 160, 0.25);
+}
+
+.vehicle-card.status-running .vehicle-card-header::after {
+  content: '● 行駛中';
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #fff;
+  background: linear-gradient(135deg, #2dd4a0, #1abc8c);
+  border: none;
+  padding: 3px 14px;
+  border-radius: 100px;
+  box-shadow: 0 0 12px rgba(45, 212, 160, 0.5), 0 0 4px rgba(45, 212, 160, 0.3);
+  animation: pulse-running 2s ease-in-out infinite;
+}
+
+@keyframes pulse-running {
+  0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(45, 212, 160, 0.5), 0 0 4px rgba(45, 212, 160, 0.3); }
+  50% { opacity: 0.85; box-shadow: 0 0 20px rgba(45, 212, 160, 0.7), 0 0 8px rgba(45, 212, 160, 0.5); }
+}
+
+.vehicle-card.status-completed {
+  opacity: 0.65;
+}
+
+.vehicle-card.status-completed .vehicle-card-header::after {
+  content: '已完成';
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  padding: 2px 10px;
+  border-radius: 100px;
+}
+
+.vehicle-card.status-not-started .vehicle-card-header::after {
+  content: '未發車';
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+  border: 1px solid rgba(232, 168, 73, 0.2);
+  padding: 2px 10px;
+  border-radius: 100px;
+}
+
+/* ═══ Vehicle Type Group Headers ═══ */
+.vehicle-group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 4px;
+  margin-top: 8px;
+}
+
+.vehicle-group-header:first-child { margin-top: 0; }
+
+.vehicle-group-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vehicle-group-dot.e { background: var(--color-e); box-shadow: 0 0 8px var(--color-e-glow); }
+.vehicle-group-dot.emu { background: var(--color-emu); box-shadow: 0 0 8px var(--color-emu-glow); }
+.vehicle-group-dot.dr { background: var(--color-dr); box-shadow: 0 0 8px var(--color-dr-glow); }
+
+.vehicle-group-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vehicle-group-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vehicle-group-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-glass);
+}
+
+/* ═══════════════════════════════════════════
+   GANTT TIMELINE
+   ═══════════════════════════════════════════ */
+.timeline-section { margin-bottom: 36px; }
+
+.timeline-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  backdrop-filter: blur(24px);
+  overflow-x: auto;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+}
+
+.timeline-header {
+  display: flex;
+  margin-left: 120px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.timeline-hour {
+  flex: 1;
+  min-width: 50px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  position: relative;
+}
+
+.timeline-hour::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 1px;
+  height: 6px;
+  background: var(--text-muted);
+  opacity: 0.3;
+}
+
+.timeline-rows { display: flex; flex-direction: column; gap: 6px; position: relative; }
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+.timeline-row-label {
+  width: 120px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-right: 16px;
+  text-align: right;
+}
+
+.timeline-row-track {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background: var(--bg-glass);
+  border-radius: 6px;
+  min-width: 600px;
+}
+
+.timeline-bar {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--timeline-bar-text);
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.timeline-bar:hover {
+  filter: brightness(1.2);
+  transform: scaleY(1.3);
+  z-index: 2;
+}
+
+.timeline-bar.type-e { background: linear-gradient(90deg, var(--color-e), rgba(74, 144, 217, 0.7)); }
+.timeline-bar.type-emu { background: linear-gradient(90deg, var(--color-emu), rgba(45, 212, 160, 0.7)); }
+.timeline-bar.type-dr { background: linear-gradient(90deg, var(--color-dr), rgba(245, 158, 11, 0.7)); }
+.timeline-bar.type-pp { background: linear-gradient(90deg, var(--color-pp), rgba(167, 139, 250, 0.7)); }
+.timeline-bar.type-ck { background: linear-gradient(90deg, var(--color-ck), rgba(244, 114, 182, 0.7)); }
+
+/* Hour grid lines */
+.timeline-row-track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--grid-tick-color) 0px,
+    var(--grid-tick-color) 1px,
+    transparent 1px,
+    transparent 100%
+  );
+  background-size: calc(100% / 19) 100%;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   OPERATION SUMMARY CARDS (Bottom)
+   ═══════════════════════════════════════════ */
+.ops-summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.ops-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  backdrop-filter: blur(24px);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+}
+
+.ops-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-panel-title .icon {
+  font-size: 16px;
+}
+
+/* Operation code distribution */
+.op-code-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.op-code-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  transition: all 0.2s;
+}
+
+.op-code-item:hover {
+  border-color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+}
+
+.op-code-name {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 70px;
+}
+
+.op-code-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.op-code-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-copper);
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.op-code-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 20px;
+  text-align: right;
+}
+
+/* Control mode pie */
+.control-grid {
+  display: flex;
+  gap: 12px;
+}
+
+.control-block {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  transition: all 0.3s;
+}
+
+.control-block:hover { transform: translateY(-2px); }
+
+.control-letter {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.control-block:nth-child(1) .control-letter { color: var(--color-e); }
+.control-block:nth-child(2) .control-letter { color: var(--color-dr); }
+.control-block:nth-child(3) .control-letter { color: var(--color-emu); }
+
+.control-count {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.control-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Depot info */
+.depot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.depot-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.depot-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-copper-dim);
+  border: 1px solid rgba(232, 168, 73, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.depot-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.depot-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.depot-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.depot-stat {
+  padding: 10px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  text-align: center;
+}
+
+.depot-stat-val {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-copper);
+}
+
+.depot-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════ */
+.app-footer {
+  text-align: center;
+  padding: 24px 0;
+  border-top: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.app-footer span { color: var(--accent-copper); }
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE
+   ═══════════════════════════════════════════ */
+.theme-toggle {
+  position: relative;
+  width: 56px;
+  height: 30px;
+  border-radius: 100px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent-copper);
+  box-shadow: 0 0 16px var(--accent-copper-dim);
+}
+
+.theme-toggle-track {
+  position: absolute;
+  inset: 3px;
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+[data-theme="light"] .theme-toggle-thumb {
+  left: calc(100% - 24px);
+  background: #f59e0b;
+}
+
+.theme-toggle-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   CURRENT TIME INDICATOR (single line across entire timeline)
+   ═══════════════════════════════════════════ */
+.timeline-now-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.timeline-now-line::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #ef4444;
+  border-radius: 1px;
+  background-image: repeating-linear-gradient(
+    180deg,
+    #ef4444 0px,
+    #ef4444 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.timeline-now-line::after {
+  content: attr(data-time);
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.timeline-now-dot {
+  position: absolute;
+  top: -5px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  animation: now-pulse 2s ease-in-out infinite;
+}
+
+@keyframes now-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.7); }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+/* ═══ DEPOT SELECTOR ═══ */
+.depot-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.depot-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 10px 36px 10px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  transition: all 0.25s;
+  min-width: 150px;
+}
+
+.depot-select:hover { border-color: var(--accent-copper); }
+.depot-select:focus { outline: none; border-color: var(--accent-copper); box-shadow: 0 0 0 3px var(--accent-copper-dim); }
+
+.depot-select-wrapper::after {
+  content: '▾';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.depot-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ═══ EXPANDABLE VEHICLE CARD DETAIL ═══ */
+.vehicle-card-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vehicle-card-expand-btn:hover {
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+}
+
+.vehicle-card-expand-btn .arrow {
+  transition: transform 0.3s;
+  font-size: 10px;
+}
+
+.vehicle-card-expand-btn.expanded .arrow {
+  transform: rotate(180deg);
+}
+
+.vehicle-card-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vehicle-card-detail.open {
+  max-height: 400px;
+}
+
+.vehicle-detail-table {
+  padding: 12px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 32px 80px 1fr 1fr 60px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.detail-row:hover {
+  border-color: var(--border-glow);
+  background: var(--accent-copper-dim);
+}
+
+.detail-row-idx {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.detail-row-train {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-row-from, .detail-row-to {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.detail-row-km {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.detail-header {
+  display: grid;
+  grid-template-columns: 32px 80px 1fr 1fr 60px;
+  gap: 8px;
+  padding: 4px 10px 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .charts-row { grid-template-columns: 1fr; }
+  .ops-summary-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .vehicles-grid { grid-template-columns: 1fr; }
+  .header { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 600px) {
+  .app { padding: 0 16px 40px; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .header-title { font-size: 28px; }
+}
+
+/* ═══ ULTRAWIDE LAYOUT (class-based, togglable) ═══ */
+html.layout-wide .app {
+  max-width: none;
+  padding: 0 48px 40px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  grid-template-areas:
+    "header   header"
+    "summary  summary"
+    "charts   vehicles"
+    "timeline timeline"
+    "ops      ops"
+    "footer   footer";
+  column-gap: 24px;
+  row-gap: 24px;
+}
+html.layout-wide .header          { grid-area: header;   margin-bottom: 0; }
+html.layout-wide .summary-grid    { grid-area: summary;  margin-bottom: 0; }
+html.layout-wide .charts-row      { grid-area: charts;   margin-bottom: 0; grid-template-columns: 1fr; align-self: start; }
+html.layout-wide .vehicles-section { grid-area: vehicles; margin-bottom: 0; }
+html.layout-wide .timeline-section { grid-area: timeline; margin-bottom: 0; }
+html.layout-wide .ops-summary-row  { grid-area: ops;     margin-bottom: 0; }
+html.layout-wide .app-footer      { grid-area: footer; }
+html.layout-wide .charts-row .chart-panel { min-width: 0; }
+html.layout-wide .donut-wrapper { width: 200px; height: 200px; }
+html.layout-wide .vehicles-grid { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+
+/* ═══ ULTRAWIDE (21:9) — ops also in sidebar ═══ */
+html.layout-ultrawide .app {
+  max-width: none;
+  padding: 0 64px 40px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  grid-template-areas:
+    "header   header"
+    "summary  summary"
+    "charts   vehicles"
+    "ops      timeline"
+    "footer   footer";
+  column-gap: 24px;
+  row-gap: 24px;
+}
+html.layout-ultrawide .header          { grid-area: header;   margin-bottom: 0; }
+html.layout-ultrawide .summary-grid    { grid-area: summary;  margin-bottom: 0; }
+html.layout-ultrawide .charts-row      { grid-area: charts;   margin-bottom: 0; grid-template-columns: 1fr; align-self: start; }
+html.layout-ultrawide .vehicles-section { grid-area: vehicles; margin-bottom: 0; }
+html.layout-ultrawide .timeline-section { grid-area: timeline; margin-bottom: 0; }
+html.layout-ultrawide .ops-summary-row  { grid-area: ops;     margin-bottom: 0; grid-template-columns: 1fr; align-self: start; }
+html.layout-ultrawide .app-footer      { grid-area: footer; }
+html.layout-ultrawide .charts-row .chart-panel { min-width: 0; }
+html.layout-ultrawide .donut-wrapper { width: 200px; height: 200px; }
+html.layout-ultrawide .vehicles-grid { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+html.layout-ultrawide .timeline-row-label { width: 140px; }
+
+/* ═══ SUPERWIDE (3000+) — 2-column, wide vehicle grid ═══ */
+html.layout-superwide .app {
+  max-width: none;
+  padding: 0 48px 40px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  grid-template-areas:
+    "header   header"
+    "summary  summary"
+    "charts   vehicles"
+    "ops      timeline"
+    "footer   footer";
+  column-gap: 24px;
+  row-gap: 24px;
+}
+html.layout-superwide .header          { grid-area: header;   margin-bottom: 0; }
+html.layout-superwide .summary-grid    { grid-area: summary;  margin-bottom: 0; }
+html.layout-superwide .charts-row      { grid-area: charts;   margin-bottom: 0; grid-template-columns: 1fr; align-self: start; }
+html.layout-superwide .vehicles-section { grid-area: vehicles; margin-bottom: 0; }
+html.layout-superwide .timeline-section { grid-area: timeline; margin-bottom: 0; }
+html.layout-superwide .ops-summary-row  { grid-area: ops;     margin-bottom: 0; grid-template-columns: 1fr; align-self: start; }
+html.layout-superwide .app-footer      { grid-area: footer; }
+html.layout-superwide .charts-row .chart-panel { min-width: 0; }
+html.layout-superwide .donut-wrapper { width: 200px; height: 200px; }
+html.layout-superwide .vehicles-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+html.layout-superwide .ops-panel { min-width: 0; }
+
+/* ═══ LAYOUT TOGGLE BUTTON ═══ */
+.layout-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+}
+
+.layout-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.25s;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.layout-btn:not(:last-child) {
+  border-right: 1px solid var(--border-glass);
+}
+
+.layout-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+}
+
+.layout-btn.active {
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ═══ SKELETON LOADING ═══ */
+.skeleton-block {
+  height: 20px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--border-glass) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+.skeleton-text {
+  display: inline-block;
+  min-width: 40px;
+  height: 1.1em;
+  vertical-align: middle;
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--border-glass) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+.summary-card.is-loading .summary-value,
+.summary-card.is-loading .summary-change {
+  color: transparent !important;
+}
+.summary-card.is-loading .summary-value span,
+.summary-card.is-loading .summary-change {
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--border-glass) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+
+.vehicle-card.animate-in {
+  animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Number counter animation handled by JS */
+.count-up { transition: all 0.3s; }
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: rgba(10, 14, 26, 0.95);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+  display: none;
+}
+
+/* ═══ NAVIGATION LINK ═══ */
+.nav-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--accent-copper-dim);
+  border: 1px solid var(--accent-copper);
+  border-radius: var(--radius-md);
+  color: var(--accent-copper);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s;
+  backdrop-filter: blur(20px);
+  white-space: nowrap;
+}
+.nav-link-btn:hover {
+  background: var(--accent-copper);
+  color: #fff;
+  box-shadow: 0 0 20px var(--accent-copper-glow);
+}
+.nav-link-btn .nav-icon { font-size: 15px; }
+
+/* ═══ VEHICLE CARD LINK ═══ */
+.vehicle-card-name a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.vehicle-card-name a:hover {
+  color: var(--accent-copper);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-badge" id="headerBadge">七堵機務段 • 即時監控</div>
+      <h1 class="header-title" id="headerTitle">車輛運用總覽</h1>
+      <p class="header-subtitle">每日編組運用狀態、里程追蹤與車次動態一覽</p>
+    </div>
+    <div class="header-right">
+      <a href="vehicle-status.html" class="nav-link-btn" title="查看全車輛可用狀態"><span class="nav-icon">🚦</span>車輛狀態總覽</a>
+      <div class="depot-select-wrapper">
+        <select class="depot-select" id="depotSelect">
+          <option value="MGY00">七堵機務段</option>
+          <option value="MHY00">臺北機務段</option>
+          <option value="MHY10">新竹機務段</option>
+          <option value="MMY00">彰化機務段</option>
+          <option value="MMY20">嘉義機務段</option>
+          <option value="MPY00">高雄機務段</option>
+          <option value="MYY00">花蓮機務段</option>
+          <option value="MFY00">宜蘭機務段</option>
+          <option value="MIY00">臺東機務段</option>
+        </select>
+      </div>
+      <div class="date-control">
+        <button class="date-btn" id="prevDate" title="前一天">◀</button>
+        <div class="date-display" id="dateDisplay"></div>
+        <button class="date-btn" id="nextDate" title="後一天">▶</button>
+      </div>
+      <div class="layout-toggle" id="layoutToggle" title="切換螢幕佈局">
+        <button class="layout-btn active" data-layout="auto">自動</button>
+        <button class="layout-btn" data-layout="normal">16:9</button>
+        <button class="layout-btn" data-layout="ultrawide">21:9</button>
+        <button class="layout-btn" data-layout="superwide">超寬</button>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="切換深淺色主題">
+        <div class="theme-toggle-track">
+          <div class="theme-toggle-thumb" id="themeThumb">🌙</div>
+        </div>
+      </button>
+      <div class="filter-chips">
+        <button class="chip active-all" data-filter="all">全部</button>
+        <button class="chip" data-filter="e">E 電力機車</button>
+        <button class="chip" data-filter="emu">EMU 電聯車</button>
+        <button class="chip" data-filter="dr">DR 柴客</button>
+        <button class="chip" data-filter="pp">PP 客車</button>
+        <button class="chip" data-filter="ck">莒光號</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ DRILL-DOWN OVERLAY ═══ -->
+  <div class="drill-overlay" id="drillOverlay">
+    <div class="drill-panel">
+      <div class="drill-header">
+        <div>
+          <div class="drill-header-title" id="drillTitle"></div>
+          <div class="drill-header-count" id="drillCount"></div>
+        </div>
+        <button class="drill-close" id="drillClose">&times;</button>
+      </div>
+      <div class="drill-body" id="drillBody"></div>
+    </div>
+  </div>
+
+  <!-- ═══ SUMMARY ═══ -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card is-loading">
+      <div class="summary-icon vehicles">🚆</div>
+      <div class="summary-label">投入編組數</div>
+      <div class="summary-value"><span class="count-up" data-target="0">—</span><span class="unit">組</span></div>
+      <div class="summary-change">&nbsp;</div>
+    </div>
+    <div class="summary-card is-loading">
+      <div class="summary-icon mileage">📏</div>
+      <div class="summary-label">總行駛里程</div>
+      <div class="summary-value"><span class="count-up" data-target="0" data-decimals="1">—</span><span class="unit">km</span></div>
+      <div class="summary-change">&nbsp;</div>
+    </div>
+    <div class="summary-card is-loading">
+      <div class="summary-icon active">⚡</div>
+      <div class="summary-label">運行中車次</div>
+      <div class="summary-value"><span class="count-up" data-target="0">—</span><span class="unit">次</span></div>
+      <div class="summary-change">&nbsp;</div>
+    </div>
+    <div class="summary-card is-loading">
+      <div class="summary-icon avg">📊</div>
+      <div class="summary-label">近7日平均里程</div>
+      <div class="summary-value"><span class="count-up" data-target="0" data-decimals="1">—</span><span class="unit">km/日</span></div>
+      <div class="summary-change">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- ═══ CHARTS ROW ═══ -->
+  <div class="charts-row">
+    <!-- Donut Chart -->
+    <div class="chart-panel">
+      <div class="section-title">車種分佈</div>
+      <div class="donut-wrapper">
+        <canvas id="donutChart"></canvas>
+        <div class="donut-center">
+          <div class="donut-center-value" id="donutTotal">—</div>
+          <div class="donut-center-label">編組總數</div>
+        </div>
+      </div>
+      <div class="legend-list">
+        <div class="legend-item">
+          <div class="legend-dot e"></div>
+          E 系列 — 電力機車
+          <div class="legend-count" id="legendE">—</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot emu"></div>
+          EMU 系列 — 電聯車
+          <div class="legend-count" id="legendEMU">—</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot dr"></div>
+          DR 系列 — 柴油客車
+          <div class="legend-count" id="legendDR">—</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot pp"></div>
+          PP 系列 — PP客車
+          <div class="legend-count" id="legendPP">—</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot ck"></div>
+          CK 系列 — 莒光號
+          <div class="legend-count" id="legendCK">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mileage Ranking -->
+    <div class="chart-panel">
+      <div class="section-title">里程排行</div>
+      <div class="mileage-list" id="mileageList"></div>
+    </div>
+  </div>
+
+  <!-- ═══ VEHICLE CARDS ═══ -->
+  <div class="vehicles-section">
+    <div class="vehicles-section-header">
+      <div class="section-title">編組運用明細</div>
+      <div class="vehicle-search">
+        <span class="vehicle-search-icon">🔍</span>
+        <input type="text" id="vehicleSearchInput" placeholder="搜尋車號..." />
+        <button class="vehicle-search-clear" id="vehicleSearchClear" title="清除">&times;</button>
+        <span class="vehicle-search-count" id="vehicleSearchCount"></span>
+      </div>
+    </div>
+    <div class="vehicles-grid" id="vehiclesGrid"></div>
+  </div>
+
+  <!-- ═══ TIMELINE ═══ -->
+  <div class="timeline-section">
+    <div class="section-title">每日運行時序</div>
+    <div class="timeline-panel">
+      <div class="timeline-header" id="timelineHeader"></div>
+      <div class="timeline-rows" id="timelineRows"></div>
+    </div>
+  </div>
+
+  <!-- ═══ BOTTOM PANELS ═══ -->
+  <div class="ops-summary-row">
+    <div class="ops-panel">
+      <div class="ops-panel-title"><span class="icon">🔢</span>運用號碼分佈</div>
+      <div class="op-code-list" id="opCodeList"></div>
+    </div>
+    <div class="ops-panel">
+      <div class="ops-panel-title"><span class="icon">🎛️</span>控制模式</div>
+      <div class="control-grid" id="controlGrid">
+        <div class="control-block">
+          <div class="control-letter">A</div>
+          <div class="control-count" id="ctrlA">—</div>
+          <div class="control-label">主控</div>
+        </div>
+        <div class="control-block">
+          <div class="control-letter">B</div>
+          <div class="control-count" id="ctrlB">—</div>
+          <div class="control-label">被控</div>
+        </div>
+        <div class="control-block">
+          <div class="control-letter">C</div>
+          <div class="control-count" id="ctrlC">—</div>
+          <div class="control-label">輔助</div>
+        </div>
+      </div>
+    </div>
+    <div class="ops-panel">
+      <div class="ops-panel-title"><span class="icon">🏭</span>廠段資訊</div>
+      <div class="depot-info" id="depotInfoPanel"></div>
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="app-footer">
+    <span id="footerDepot"></span> 車輛運用編組管理系統 — 資料日期 <span id="footerDate"></span>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ═══ API Layer ═══ -->
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/api-client.js"></script>
+<script src="js/mock-data.js"></script>
+<script src="js/data-service.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const depotMeta = MOCK_DEPOT_META;
+let currentDepot = 'MGY00';
+let currentDate = getTodaySlash();
+let currentFilter = 'all';
+let vehicleSearchQuery = '';
+let donutChart = null;
+let cachedVehicles = [];
+let cachedFleetSummary = null;
+
+// ═══════════════════════════════════════════
+// UTILITIES (index-specific)
+// ═══════════════════════════════════════════
+function timeToMinutes(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function filterData(data) {
+  let filtered = data;
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(v => (v.type || getType(v.id)) === currentFilter);
+  }
+  if (vehicleSearchQuery) {
+    const q = vehicleSearchQuery.toLowerCase();
+    filtered = filtered.filter(v => v.id.toLowerCase().includes(q));
+  }
+  return filtered;
+}
+
+function getVehicleStatus(v) {
+  const now = new Date();
+  const todaySlash = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+
+  // 非今日資料：全部視為已完成
+  if (currentDate !== todaySlash) return 'completed';
+
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const startMin = timeToMinutes(v.start);
+  const endMin = timeToMinutes(v.end);
+  if (!v.start || !v.end) return 'not-started';
+  if (nowMin < startMin) return 'not-started';
+  if (nowMin > endMin) return 'completed';
+  return 'running';
+}
+
+// ═══════════════════════════════════════════
+// COUNTER ANIMATION
+// ═══════════════════════════════════════════
+function animateCounters() {
+  document.querySelectorAll('.count-up').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const decimals = parseInt(el.dataset.decimals) || 0;
+    const duration = 1200;
+    const start = performance.now();
+
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = eased * target;
+      el.textContent = decimals ? current.toFixed(1) : Math.round(current).toLocaleString();
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// ═══════════════════════════════════════════
+// SUMMARY UPDATE
+// ═══════════════════════════════════════════
+function updateSummary(data) {
+  // Remove loading state
+  document.querySelectorAll('.summary-card').forEach(c => c.classList.remove('is-loading'));
+
+  const filtered = filterData(data);
+  const total = filtered.length;
+  const totalMileage = filtered.reduce((s, v) => s + v.mileage, 0);
+  const totalTrains = filtered.reduce((s, v) => s + v.trains.length, 0);
+
+  // 近7日平均里程：從 fleet-summary API 取得
+  const avg7 = cachedFleetSummary?.summary?.avg7DayMileage || 0;
+
+  const counters = document.querySelectorAll('.count-up');
+  counters[0].dataset.target = total;
+  counters[1].dataset.target = totalMileage.toFixed(1);
+  counters[2].dataset.target = totalTrains;
+  counters[3].dataset.target = avg7.toFixed ? avg7.toFixed(1) : avg7;
+
+  animateCounters();
+}
+
+// ═══════════════════════════════════════════
+// DONUT CHART
+// ═══════════════════════════════════════════
+function renderDonut(data) {
+  const items = filterData(data);
+  const eCount = items.filter(v => (v.type || getType(v.id)) === 'e').length;
+  const emuCount = items.filter(v => (v.type || getType(v.id)) === 'emu').length;
+  const drCount = items.filter(v => (v.type || getType(v.id)) === 'dr').length;
+  const ppCount = items.filter(v => (v.type || getType(v.id)) === 'pp').length;
+  const ckCount = items.filter(v => (v.type || getType(v.id)) === 'ck').length;
+  const total = items.length;
+
+  document.getElementById('donutTotal').textContent = total;
+  document.getElementById('legendE').textContent = eCount;
+  document.getElementById('legendEMU').textContent = emuCount;
+  document.getElementById('legendDR').textContent = drCount;
+  document.getElementById('legendPP').textContent = ppCount;
+  document.getElementById('legendCK').textContent = ckCount;
+
+  const ctx = document.getElementById('donutChart').getContext('2d');
+
+  if (donutChart) donutChart.destroy();
+
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['E 電力機車', 'EMU 電聯車', 'DR 柴油客車', 'PP 客車', '莒光號'],
+      datasets: [{
+        data: [eCount, emuCount, drCount, ppCount, ckCount],
+        backgroundColor: ['#4a90d9', '#2dd4a0', '#f59e0b', '#a78bfa', '#f472b6'],
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--donut-border').trim(),
+        borderWidth: 3,
+        hoverBorderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(10, 14, 26, 0.95)',
+          titleColor: '#e8edf5',
+          bodyColor: '#7a8ba8',
+          borderColor: 'rgba(232, 168, 73, 0.2)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          padding: 12,
+          bodyFont: { family: 'JetBrains Mono' },
+          callbacks: {
+            label: ctx => ` ${ctx.parsed} 組 (${((ctx.parsed / total) * 100).toFixed(0)}%)`
+          }
+        }
+      },
+      animation: { animateRotate: true, duration: 1000 }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// MILEAGE RANKING
+// ═══════════════════════════════════════════
+function renderMileage(data) {
+  const list = document.getElementById('mileageList');
+  // Mileage ranking shows all vehicles (filtered by type only, not by search)
+  const typeFiltered = currentFilter === 'all' ? data : data.filter(v => (v.type || getType(v.id)) === currentFilter);
+  const sorted = [...typeFiltered].sort((a, b) => b.mileage - a.mileage);
+  const max = sorted[0]?.mileage || 1;
+
+  list.innerHTML = sorted.map(v => {
+    const type = v.type || getType(v.id);
+    const pct = (v.mileage / max * 100).toFixed(1);
+    const isActive = vehicleSearchQuery && v.id.toLowerCase().includes(vehicleSearchQuery.toLowerCase());
+    return `
+      <div class="mileage-item${isActive ? ' active' : ''}" data-vehicle-id="${v.id}">
+        <div class="mileage-label" style="color: ${ {e:'#4a90d9',emu:'#2dd4a0',dr:'#f59e0b',pp:'#a78bfa',ck:'#f472b6'}[type] || '#888' }">${v.id}</div>
+        <div class="mileage-bar-track">
+          <div class="mileage-bar-fill type-${type}" data-width="${pct}"></div>
+        </div>
+        <div class="mileage-value">${v.mileage.toFixed(1)} km</div>
+      </div>
+    `;
+  }).join('');
+
+  // Click to filter vehicle cards
+  list.querySelectorAll('.mileage-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const vid = item.dataset.vehicleId;
+      const input = document.getElementById('vehicleSearchInput');
+      const clearBtn = document.getElementById('vehicleSearchClear');
+      const countEl = document.getElementById('vehicleSearchCount');
+
+      // Toggle: click same vehicle again to clear
+      if (vehicleSearchQuery === vid) {
+        vehicleSearchQuery = '';
+        input.value = '';
+        clearBtn.classList.remove('visible');
+        countEl.textContent = '';
+      } else {
+        vehicleSearchQuery = vid;
+        input.value = vid;
+        clearBtn.classList.add('visible');
+        const filtered = filterData(cachedVehicles);
+        const total = cachedVehicles.filter(v =>
+          currentFilter === 'all' || (v.type || getType(v.id)) === currentFilter
+        ).length;
+        countEl.textContent = `${filtered.length}/${total}`;
+      }
+
+      // Re-render all filtered components
+      applyFilter();
+
+      // Scroll to vehicle cards section
+      if (vehicleSearchQuery) {
+        document.querySelector('.vehicles-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      list.querySelectorAll('.mileage-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 100);
+  });
+}
+
+// ═══════════════════════════════════════════
+// VEHICLE CARDS
+// ═══════════════════════════════════════════
+function renderVehicleCards(data) {
+  const grid = document.getElementById('vehiclesGrid');
+  const filtered = filterData(data);
+
+  // Group by type
+  const typeOrder = ['e', 'emu', 'dr', 'pp', 'ck'];
+  const groups = {};
+  filtered.forEach(v => {
+    const t = v.type || getType(v.id);
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(v);
+  });
+
+  // 每組內排序：行駛中優先，再按車號排序
+  const statusPriority = { 'running': 0, 'not-started': 1, 'completed': 2 };
+  Object.keys(groups).forEach(t => {
+    groups[t].sort((a, b) => {
+      const sa = statusPriority[getVehicleStatus(a)] ?? 1;
+      const sb = statusPriority[getVehicleStatus(b)] ?? 1;
+      if (sa !== sb) return sa - sb;
+      return sortByVehicleId(a.id, b.id);
+    });
+  });
+
+  let html = '';
+  let cardIdx = 0;
+
+  typeOrder.forEach(type => {
+    if (!groups[type] || groups[type].length === 0) return;
+
+    // Only show group headers when filter is 'all'
+    if (currentFilter === 'all') {
+      html += `
+        <div class="vehicle-group-header">
+          <div class="vehicle-group-dot ${type}"></div>
+          <div class="vehicle-group-label">${getTypeLabelFull(type)}</div>
+          <div class="vehicle-group-count">${groups[type].length} 組</div>
+          <div class="vehicle-group-line"></div>
+        </div>`;
+    }
+
+    groups[type].forEach(v => {
+      const ctrlClass = v.ctrl === 'A' ? 'ctrl-a' : v.ctrl === 'B' ? 'ctrl-b' : 'ctrl-c';
+      const daysLabel = `D+${v.days}`;
+      const status = getVehicleStatus(v);
+
+      const stopsHTML = v.trains.map((t, idx) => {
+        const isFirst = idx === 0;
+        const isLast = idx === v.trains.length - 1;
+        const dotClass = isFirst ? 'first' : isLast ? 'last' : '';
+        const labelClass = isFirst ? 'first' : isLast ? 'last' : '';
+        return `
+          <div class="route-stop">
+            <div class="stop-dot ${dotClass}"></div>
+            <div class="stop-label ${labelClass}">${t}</div>
+          </div>
+        `;
+      }).join('');
+
+      const detailRows = v.trains.map((t, idx) => {
+        const station = trainStations[t] || { from: '—', to: '—' };
+        const segKm = v.trains.length > 0 ? (v.mileage / v.trains.length).toFixed(1) : '—';
+        return `
+          <div class="detail-row">
+            <div class="detail-row-idx">${idx + 1}</div>
+            <div class="detail-row-train">${t}</div>
+            <div class="detail-row-from">${station.from}</div>
+            <div class="detail-row-to">${station.to}</div>
+            <div class="detail-row-km">${segKm}</div>
+          </div>`;
+      }).join('');
+
+      const cardId = 'card-' + v.id.replace(/\s/g, '') + '-' + cardIdx;
+
+      html += `
+        <div class="vehicle-card type-${v.type || getType(v.id)} status-${status}" style="animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${0.05 * cardIdx}s forwards;">
+          <div class="vehicle-card-header">
+            <div class="vehicle-card-id-group">
+              <div class="vehicle-type-indicator"></div>
+              <div>
+                <div class="vehicle-card-name"><a href="vehicle-history.html?id=${v.assetnum || v.id}" title="${v.id} 運用歷程">${v.id}</a></div>
+                <div class="vehicle-card-sub">${v.opCode} · ${v.ma} · ${getTypeLabel(v.type || getType(v.id))}</div>
+              </div>
+            </div>
+            <div class="vehicle-card-badges">
+              <div class="v-badge ${ctrlClass}">${v.ctrl}</div>
+              <div class="v-badge days">${daysLabel}</div>
+            </div>
+          </div>
+          <div class="vehicle-route">
+            <div class="route-track">
+              <div class="route-line"></div>
+              <div class="route-stops">${stopsHTML}</div>
+            </div>
+          </div>
+          <div class="vehicle-card-footer">
+            <div class="footer-stat">
+              <div class="footer-stat-label">起迄時間</div>
+              <div class="footer-stat-value">${v.start || '--:--'} → ${v.end || '--:--'}</div>
+            </div>
+            <div class="footer-stat">
+              <div class="footer-stat-label">車次數</div>
+              <div class="footer-stat-value">${v.trains.length}</div>
+            </div>
+            <div class="footer-mileage">${v.mileage.toFixed(1)}<span class="km"> km</span></div>
+          </div>
+          <div class="vehicle-card-detail" id="${cardId}">
+            <div class="vehicle-detail-table">
+              <div class="detail-header">
+                <div>#</div><div>車次</div><div>起站</div><div>訖站</div><div>里程</div>
+              </div>
+              ${detailRows}
+            </div>
+          </div>
+          <button class="vehicle-card-expand-btn" onclick="toggleCardDetail('${cardId}', this)">
+            <span>展開車次明細</span><span class="arrow">▼</span>
+          </button>
+        </div>`;
+      cardIdx++;
+    });
+  });
+
+  grid.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+// TIMELINE
+// ═══════════════════════════════════════════
+function renderTimeline(data) {
+  const header = document.getElementById('timelineHeader');
+  const rows = document.getElementById('timelineRows');
+  const filtered = filterData(data).filter(v => v.start && v.end);
+
+  // Hours 4-24
+  const startH = 4, endH = 24;
+  const totalH = endH - startH;
+
+  header.innerHTML = '';
+  for (let h = startH; h <= endH; h++) {
+    const el = document.createElement('div');
+    el.className = 'timeline-hour';
+    el.textContent = String(h).padStart(2, '0') + ':00';
+    header.appendChild(el);
+  }
+
+  rows.innerHTML = filtered.map(v => {
+    const type = v.type || getType(v.id);
+    const startMin = timeToMinutes(v.start);
+    const endMin = timeToMinutes(v.end);
+    const totalMin = totalH * 60;
+    const offsetMin = startH * 60;
+
+    const left = Math.max(0, ((startMin - offsetMin) / totalMin) * 100);
+    const width = Math.max(2, ((endMin - startMin) / totalMin) * 100);
+
+    return `
+      <div class="timeline-row">
+        <div class="timeline-row-label" style="color: ${ {e:'#4a90d9',emu:'#2dd4a0',dr:'#f59e0b',pp:'#a78bfa',ck:'#f472b6'}[type] || '#888' }">${v.id}</div>
+        <div class="timeline-row-track">
+          <div class="timeline-bar type-${type}" style="left: ${left}%; width: ${width}%;"
+               title="${v.id}: ${v.start}-${v.end} (${v.mileage} km)">
+            ${width > 8 ? v.opCode : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// OP CODE DISTRIBUTION
+// ═══════════════════════════════════════════
+function renderOpCodes(data) {
+  const list = document.getElementById('opCodeList');
+  const items = filterData(data);
+  const codes = {};
+  items.forEach(v => {
+    codes[v.opCode] = (codes[v.opCode] || 0) + 1;
+  });
+  const sorted = Object.entries(codes).sort((a, b) => b[1] - a[1]);
+  const max = sorted[0]?.[1] || 1;
+
+  list.innerHTML = sorted.map(([code, count]) => `
+    <div class="op-code-item">
+      <div class="op-code-name">${code}</div>
+      <div class="op-code-bar">
+        <div class="op-code-fill" style="width: ${(count / max * 100)}%"></div>
+      </div>
+      <div class="op-code-count">${count}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+// CONTROL MODE
+// ═══════════════════════════════════════════
+function updateControlCounts(data) {
+  const items = filterData(data);
+  const a = items.filter(v => v.ctrl === 'A').length;
+  const b = items.filter(v => v.ctrl === 'B').length;
+  const c = items.filter(v => v.ctrl === 'C').length;
+  document.getElementById('ctrlA').textContent = a;
+  document.getElementById('ctrlB').textContent = b;
+  document.getElementById('ctrlC').textContent = c;
+}
+
+// ═══════════════════════════════════════════
+// DEPOT INFO
+// ═══════════════════════════════════════════
+function renderDepotInfo(data) {
+  const meta = depotMeta[currentDepot] || {};
+  const items = filterData(data);
+  const totalTrains = items.reduce((s, v) => s + v.trains.length, 0);
+
+  // Use fleet summary from API if available
+  let monthlyCount = meta.monthly || 0;
+  let rate = meta.rate || '—';
+  let pending = meta.pending || 0;
+
+  if (cachedFleetSummary) {
+    const summary = cachedFleetSummary.summary;
+    if (summary.totalVehicles) monthlyCount = summary.totalVehicles;
+    if (summary.activeVehicles && summary.totalVehicles) {
+      rate = (summary.activeVehicles / summary.totalVehicles * 100).toFixed(1) + '%';
+    }
+  }
+
+  const panel = document.getElementById('depotInfoPanel');
+  panel.innerHTML = `
+    <div class="depot-card">
+      <div class="depot-icon">🚉</div>
+      <div>
+        <div class="depot-name">${meta.name || currentDepot}</div>
+        <div class="depot-code">${currentDepot} — ${meta.location || ''}</div>
+      </div>
+    </div>
+    <div class="depot-stats">
+      <div class="depot-stat"><div class="depot-stat-val">${monthlyCount}</div><div class="depot-stat-label">全月編組數</div></div>
+      <div class="depot-stat"><div class="depot-stat-val">${totalTrains}</div><div class="depot-stat-label">今日車次</div></div>
+      <div class="depot-stat"><div class="depot-stat-val">${rate}</div><div class="depot-stat-label">運用達成率</div></div>
+      <div class="depot-stat"><div class="depot-stat-val">${pending}</div><div class="depot-stat-label">待檢編組</div></div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════
+// APPLY FILTER (re-render all filter-affected components)
+// ═══════════════════════════════════════════
+function applyFilter() {
+  const data = cachedVehicles;
+  updateSummary(data);
+  renderDonut(data);
+  renderMileage(data);
+  renderVehicleCards(data);
+  renderTimeline(data);
+  renderOpCodes(data);
+  updateControlCounts(data);
+  renderDepotInfo(data);
+}
+
+// ═══════════════════════════════════════════
+// RENDER ALL (sync, uses cached data)
+// ═══════════════════════════════════════════
+function renderAll() {
+  const data = cachedVehicles;
+  const meta = depotMeta[currentDepot] || {};
+  document.getElementById('dateDisplay').textContent = currentDate;
+  document.getElementById('footerDate').textContent = currentDate;
+  document.getElementById('footerDepot').textContent = meta.name || currentDepot;
+  document.getElementById('headerBadge').textContent = (meta.name || currentDepot) + ' • 即時監控';
+
+  updateSummary(data);
+  renderDonut(data);
+  renderMileage(data);
+  renderVehicleCards(data);
+  renderTimeline(data);
+  renderOpCodes(data);
+  updateControlCounts(data);
+  renderDepotInfo(data);
+  if (typeof renderCurrentTimeLine === 'function') renderCurrentTimeLine();
+}
+
+// ═══════════════════════════════════════════
+// LOAD DATA (async, fetches from API)
+// ═══════════════════════════════════════════
+function showSkeletonAll() {
+  // Summary cards loading state
+  document.querySelectorAll('.summary-card').forEach(c => c.classList.add('is-loading'));
+  // Vehicle grid
+  const grid = document.getElementById('vehiclesGrid');
+  grid.innerHTML = Array.from({length: 8}, (_, i) =>
+    `<div class="vehicle-card" style="min-height:140px"><div class="skeleton-block" style="width:60%;animation-delay:${i*0.05}s"></div><div class="skeleton-block" style="width:80%;animation-delay:${i*0.05+0.1}s"></div><div class="skeleton-block" style="width:45%;animation-delay:${i*0.05+0.2}s"></div></div>`
+  ).join('');
+  // Mileage list
+  const ml = document.getElementById('mileageList');
+  ml.innerHTML = Array.from({length: 6}, (_, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="skeleton-block" style="width:50px;height:16px;margin:0;animation-delay:${i*0.08}s"></div><div class="skeleton-block" style="flex:1;height:12px;margin:0;animation-delay:${i*0.08+0.05}s"></div><div class="skeleton-block" style="width:60px;height:14px;margin:0;animation-delay:${i*0.08+0.1}s"></div></div>`
+  ).join('');
+  // Op codes
+  const oc = document.getElementById('opCodeList');
+  oc.innerHTML = Array.from({length: 4}, (_, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="skeleton-block" style="width:40px;height:14px;margin:0;animation-delay:${i*0.08}s"></div><div class="skeleton-block" style="flex:1;height:10px;margin:0;animation-delay:${i*0.08+0.05}s"></div></div>`
+  ).join('');
+  // Depot info
+  const dp = document.getElementById('depotInfoPanel');
+  dp.innerHTML = Array.from({length: 3}, (_, i) =>
+    `<div class="skeleton-block" style="width:${60+i*15}%;animation-delay:${i*0.1}s"></div>`
+  ).join('');
+  // Timeline
+  document.getElementById('timelineHeader').innerHTML = '';
+  document.getElementById('timelineRows').innerHTML =
+    `<div style="padding:30px;text-align:center"><div class="skeleton-block" style="width:80%;margin:0 auto"></div></div>`;
+}
+
+async function loadData() {
+  showSkeletonAll();
+
+  try {
+    const isoDate = toISODate(currentDate);
+    const [summaryResp, opsResp] = await Promise.all([
+      dataService.getFleetSummary(currentDepot, isoDate).catch(() => null),
+      dataService.getDailyOps(currentDepot, isoDate, 'all')
+    ]);
+
+    cachedFleetSummary = summaryResp ? summaryResp.data : null;
+    cachedVehicles = opsResp.data.vehicles || [];
+
+    // 本日無資料 → 自動跳到最近有資料的日期
+    if (cachedVehicles.length === 0) {
+      try {
+        const latestResp = await dataService.getLatestDataDate(currentDepot);
+        const latestDate = latestResp.data.date;
+        if (latestDate) {
+          const latestSlash = toSlashDate(latestDate);
+          if (latestSlash !== currentDate) {
+            console.info('[index] 本日無資料，自動跳轉至', latestSlash);
+            currentDate = latestSlash;
+            return await loadData(); // 用新日期重新載入
+          }
+        }
+      } catch (e) {
+        console.warn('[index] getLatestDataDate failed:', e.message);
+      }
+    }
+
+    renderAll();
+  } catch (err) {
+    console.error('[index] loadData error:', err);
+    showError('vehiclesGrid', '載入資料失敗：' + err.message, loadData);
+  }
+}
+
+// ═══════════════════════════════════════════
+// DATE NAVIGATION (async)
+// ═══════════════════════════════════════════
+function shiftDate(days) {
+  const parts = currentDate.split('/');
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}/${m}/${dd}`;
+}
+
+document.getElementById('prevDate').addEventListener('click', async () => {
+  currentDate = shiftDate(-1);
+  await loadData();
+});
+
+document.getElementById('nextDate').addEventListener('click', async () => {
+  currentDate = shiftDate(1);
+  await loadData();
+});
+
+// ═══════════════════════════════════════════
+// FILTER (sync, uses cached data)
+// ═══════════════════════════════════════════
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => {
+      c.className = 'chip';
+    });
+    const filter = chip.dataset.filter;
+    currentFilter = filter;
+    const activeClass = 'active-' + filter;
+    chip.classList.add(activeClass);
+    renderAll();
+  });
+});
+
+// ═══════════════════════════════════════════
+// DRILL-DOWN (click summary cards to see list)
+// ═══════════════════════════════════════════
+(function() {
+  const overlay = document.getElementById('drillOverlay');
+  const titleEl = document.getElementById('drillTitle');
+  const countEl = document.getElementById('drillCount');
+  const bodyEl = document.getElementById('drillBody');
+
+  function closeDrill() { overlay.classList.remove('open'); }
+  document.getElementById('drillClose').addEventListener('click', closeDrill);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeDrill(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrill(); });
+
+  function buildTable(headers, rows) {
+    const ths = headers.map(h => `<th>${h.label}</th>`).join('');
+    const trs = rows.map(r => {
+      const tds = headers.map(h => `<td class="${h.cls || ''}">${h.render(r)}</td>`).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    return `<table class="drill-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  }
+
+  function typeDot(v) {
+    const t = v.type || getType(v.id);
+    return `<span class="type-dot ${t}"></span>${getTypeLabel(t)}`;
+  }
+
+  function showVehicleList(title) {
+    const data = filterData(cachedVehicles);
+    titleEl.textContent = title;
+    countEl.textContent = `共 ${data.length} 筆`;
+    bodyEl.innerHTML = buildTable([
+      { label: '車號', render: v => `<a href="vehicle-history.html?id=${v.assetnum || v.id}" style="color:var(--accent-copper)">${v.id}</a>` },
+      { label: '車型', render: v => typeDot(v) },
+      { label: '運用號碼', render: v => v.opCode },
+      { label: '車次數', cls: 'num', render: v => v.trains.length },
+      { label: '起迄時間', render: v => `${v.start || '--:--'} → ${v.end || '--:--'}` },
+      { label: '里程', cls: 'km', render: v => v.mileage.toFixed(1) + ' km' },
+    ], data);
+    overlay.classList.add('open');
+  }
+
+  function showTrainList(title) {
+    const data = filterData(cachedVehicles);
+    const trains = [];
+    data.forEach(v => {
+      v.trains.forEach(t => {
+        trains.push({ trainNo: t, vehicleId: v.id, assetnum: v.assetnum, type: v.type || getType(v.id), mileage: v.trains.length > 0 ? v.mileage / v.trains.length : 0 });
+      });
+    });
+    titleEl.textContent = title;
+    countEl.textContent = `共 ${trains.length} 車次`;
+    bodyEl.innerHTML = buildTable([
+      { label: '車次', render: r => r.trainNo },
+      { label: '車號', render: r => `<a href="vehicle-history.html?id=${r.assetnum || r.vehicleId}" style="color:var(--accent-copper)">${r.vehicleId}</a>` },
+      { label: '車型', render: r => `<span class="type-dot ${r.type}"></span>${getTypeLabel(r.type)}` },
+      { label: '里程', cls: 'km', render: r => r.mileage.toFixed(1) + ' km' },
+    ], trains);
+    overlay.classList.add('open');
+  }
+
+  function showMileageList(title) {
+    const data = [...filterData(cachedVehicles)].sort((a, b) => b.mileage - a.mileage);
+    const totalKm = data.reduce((s, v) => s + v.mileage, 0);
+    titleEl.textContent = title;
+    countEl.textContent = `總計 ${totalKm.toFixed(1)} km`;
+    bodyEl.innerHTML = buildTable([
+      { label: '#', cls: 'num', render: (v, i) => i + 1 },
+      { label: '車號', render: v => `<a href="vehicle-history.html?id=${v.assetnum || v.id}" style="color:var(--accent-copper)">${v.id}</a>` },
+      { label: '車型', render: v => typeDot(v) },
+      { label: '運用號碼', render: v => v.opCode },
+      { label: '車次數', cls: 'num', render: v => v.trains.length },
+      { label: '里程', cls: 'km', render: v => v.mileage.toFixed(1) + ' km' },
+    ], data);
+    // Fix index rendering
+    bodyEl.querySelectorAll('.drill-table tbody tr').forEach((tr, i) => {
+      tr.querySelector('td').textContent = i + 1;
+    });
+    overlay.classList.add('open');
+  }
+
+  const cards = document.querySelectorAll('.summary-card');
+  if (cards[0]) cards[0].addEventListener('click', () => showVehicleList('投入編組明細'));
+  if (cards[1]) cards[1].addEventListener('click', () => showMileageList('里程排行明細'));
+  if (cards[2]) cards[2].addEventListener('click', () => showTrainList('運行車次明細'));
+  if (cards[3]) cards[3].addEventListener('click', () => showMileageList('平均里程明細'));
+})();
+
+// ═══════════════════════════════════════════
+// VEHICLE SEARCH
+// ═══════════════════════════════════════════
+(function() {
+  const input = document.getElementById('vehicleSearchInput');
+  const clearBtn = document.getElementById('vehicleSearchClear');
+  const countEl = document.getElementById('vehicleSearchCount');
+
+  function updateSearch() {
+    vehicleSearchQuery = input.value.trim();
+    clearBtn.classList.toggle('visible', vehicleSearchQuery.length > 0);
+    const filtered = filterData(cachedVehicles);
+    const total = cachedVehicles.filter(v =>
+      currentFilter === 'all' || (v.type || getType(v.id)) === currentFilter
+    ).length;
+    countEl.textContent = vehicleSearchQuery ? `${filtered.length}/${total}` : '';
+    applyFilter();
+  }
+
+  input.addEventListener('input', updateSearch);
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    updateSearch();
+    input.focus();
+  });
+})();
+
+// ═══════════════════════════════════════════
+// DEPOT SWITCHING (async)
+// ═══════════════════════════════════════════
+document.getElementById('depotSelect').addEventListener('change', async (e) => {
+  currentDepot = e.target.value;
+  currentDate = getTodaySlash();
+  vehicleSearchQuery = '';
+  document.getElementById('vehicleSearchInput').value = '';
+  document.getElementById('vehicleSearchClear').classList.remove('visible');
+  document.getElementById('vehicleSearchCount').textContent = '';
+  await loadData();
+});
+
+// ═══════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════
+function getTheme() {
+  return localStorage.getItem('car-dashboard-theme') || 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.classList.add('theme-transition');
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('car-dashboard-theme', theme);
+  document.getElementById('themeThumb').textContent = theme === 'dark' ? '🌙' : '☀️';
+
+  // Re-render donut chart with correct border color
+  renderDonut(cachedVehicles);
+
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transition');
+  }, 450);
+}
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// ═══════════════════════════════════════════
+// CURRENT TIME INDICATOR
+// ═══════════════════════════════════════════
+function renderCurrentTimeLine() {
+  // Remove existing
+  document.querySelectorAll('.timeline-now-line').forEach(el => el.remove());
+
+  const startH = 4, endH = 24, totalMin = (endH - startH) * 60;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const offsetMin = startH * 60;
+
+  if (nowMin < offsetMin || nowMin > endH * 60) return;
+
+  const pct = ((nowMin - offsetMin) / totalMin) * 100;
+  const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+  const rows = document.getElementById('timelineRows');
+  if (!rows) return;
+
+  const marker = document.createElement('div');
+  marker.className = 'timeline-now-line';
+  marker.setAttribute('data-time', timeStr);
+  // Position: 120px label offset + percentage of remaining track width
+  marker.style.left = 'calc(120px + (100% - 120px) * ' + (pct / 100) + ')';
+  marker.innerHTML = '<div class="timeline-now-dot"></div>';
+  rows.appendChild(marker);
+}
+
+// ═══════════════════════════════════════════
+// CARD EXPAND/COLLAPSE
+// ═══════════════════════════════════════════
+function toggleCardDetail(cardId, btn) {
+  const detail = document.getElementById(cardId);
+  if (!detail) return;
+  const isOpen = detail.classList.toggle('open');
+  btn.classList.toggle('expanded', isOpen);
+  btn.querySelector('span:first-child').textContent = isOpen ? '收起車次明細' : '展開車次明細';
+}
+
+// ═══════════════════════════════════════════
+// LAYOUT TOGGLE (Auto / 16:9 / 21:9)
+// ═══════════════════════════════════════════
+let currentLayoutMode = 'auto';
+
+function getAutoLayoutClass() {
+  const w = window.innerWidth;
+  const ratio = w / window.innerHeight;
+  if (w >= 3000) return 'layout-superwide';
+  if (ratio >= 21 / 9) return 'layout-ultrawide';
+  if (ratio >= 2) return 'layout-wide';
+  return '';
+}
+
+function applyLayout(mode) {
+  const html = document.documentElement;
+  html.classList.remove('layout-wide', 'layout-ultrawide', 'layout-superwide');
+
+  if (mode === 'auto') {
+    const cls = getAutoLayoutClass();
+    if (cls) html.classList.add(cls);
+  } else if (mode === 'normal') {
+    // No class added
+  } else if (mode === 'ultrawide') {
+    html.classList.add('layout-ultrawide');
+  } else if (mode === 'superwide') {
+    html.classList.add('layout-superwide');
+  }
+
+  document.querySelectorAll('#layoutToggle .layout-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-layout') === mode);
+  });
+}
+
+function setLayout(mode) {
+  currentLayoutMode = mode;
+  localStorage.setItem('car-dashboard-layout', mode);
+  applyLayout(mode);
+}
+
+document.getElementById('layoutToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.layout-btn');
+  if (!btn) return;
+  setLayout(btn.getAttribute('data-layout'));
+});
+
+window.addEventListener('resize', () => {
+  if (currentLayoutMode === 'auto') {
+    applyLayout('auto');
+  }
+});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Apply saved theme
+  const savedTheme = getTheme();
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.getElementById('themeThumb').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+  // Apply saved layout
+  const savedLayout = localStorage.getItem('car-dashboard-layout') || 'auto';
+  currentLayoutMode = savedLayout;
+  applyLayout(savedLayout);
+  document.querySelectorAll('#layoutToggle .layout-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-layout') === savedLayout);
+  });
+
+  // Populate depot dropdown from API
+  try {
+    const depotResp = await dataService.getDepots();
+    const select = document.getElementById('depotSelect');
+    select.innerHTML = '';
+    depotResp.data.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.code;
+      opt.textContent = d.name;
+      select.appendChild(opt);
+    });
+    select.value = currentDepot;
+  } catch (err) {
+    console.warn('[index] Failed to load depots, using defaults:', err.message);
+  }
+
+  // Load initial data
+  await loadData();
+  renderCurrentTimeLine();
+
+  // Update current time line every minute
+  setInterval(renderCurrentTimeLine, 60000);
+});
+</script>
+</body>
+</html>
