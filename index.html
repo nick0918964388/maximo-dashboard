@@ -1678,6 +1678,28 @@ body::after {
   transform: rotate(180deg);
 }
 
+.vehicle-card-map-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-copper-dim);
+  border: 1px solid var(--border-glass);
+  color: var(--accent-copper);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.vehicle-card-map-btn:hover {
+  background: var(--accent-copper-glow);
+  border-color: var(--accent-copper);
+  transform: scale(1.1);
+}
+
 .vehicle-card-detail {
   max-height: 0;
   overflow: hidden;
@@ -2006,6 +2028,7 @@ html.layout-superwide .ops-panel { min-width: 0; }
     </div>
     <div class="header-right">
       <a href="vehicle-status.html" class="nav-link-btn" title="查看全車輛可用狀態"><span class="nav-icon">🚦</span>車輛狀態總覽</a>
+      <a href="train-map.html" class="nav-link-btn" title="列車動態地圖"><span class="nav-icon">🗺️</span>列車地圖</a>
       <div class="depot-select-wrapper">
         <select class="depot-select" id="depotSelect">
           <option value="MGY00">七堵機務段</option>
@@ -2201,11 +2224,11 @@ html.layout-superwide .ops-panel { min-width: 0; }
 <div class="tooltip" id="tooltip"></div>
 
 <!-- ═══ API Layer ═══ -->
-<script src="js/config.js"></script>
-<script src="js/shared.js"></script>
-<script src="js/api-client.js"></script>
-<script src="js/mock-data.js"></script>
-<script src="js/data-service.js"></script>
+<script src="js/config.js?v=20260312b"></script>
+<script src="js/shared.js?v=20260312b"></script>
+<script src="js/api-client.js?v=20260312b"></script>
+<script src="js/mock-data.js?v=20260312b"></script>
+<script src="js/data-service.js?v=20260312b"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -2521,6 +2544,7 @@ function renderVehicleCards(data) {
               </div>
             </div>
             <div class="vehicle-card-badges">
+              <a href="train-map.html?vehicle=${encodeURIComponent(v.id)}" class="vehicle-card-map-btn" title="在地圖上查看 ${v.id} 路線" onclick="event.stopPropagation()">&#x1f5fa;</a>
               <div class="v-badge ${ctrlClass}">${v.ctrl}</div>
               <div class="v-badge days">${daysLabel}</div>
             </div>

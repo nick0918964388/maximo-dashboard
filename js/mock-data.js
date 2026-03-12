@@ -477,6 +477,77 @@ class MockAPI {
   }
 
   // ══════════════════════════════════════════
+  // GET /train-tracking
+  // ══════════════════════════════════════════
+  async getTrainTracking(date, vehicle = null, depot = null) {
+    await this._simulate();
+    // Generate mock tracking data from MOCK_ALL_DATA
+    const vehicles = [];
+    const dateKey = date ? toSlashDate(date) : '2026/02/24';
+
+    const depots = depot && depot !== 'all' ? [depot] : Object.keys(MOCK_ALL_DATA);
+    for (const dCode of depots) {
+      const depotData = MOCK_ALL_DATA[dCode];
+      if (!depotData) continue;
+      const dayVehicles = depotData[dateKey] || [];
+
+      for (const v of dayVehicles) {
+        if (vehicle && v.id !== vehicle) continue;
+
+        const legs = [];
+        let totalMileage = 0;
+
+        // Build legs from trains array using trainStations lookup
+        if (v.trains && v.trains.length > 0) {
+          v.trains.forEach((trainNo, idx) => {
+            const stationInfo = trainStations[trainNo];
+            const fromSt = stationInfo ? stationInfo.from : '七堵';
+            const toSt = stationInfo ? stationInfo.to : '松山';
+
+            // Generate times based on start/end spread
+            const baseHour = v.start ? parseInt(v.start.split(':')[0]) : 6;
+            const legHour = baseHour + idx * 2;
+            const deptTime = `${String(legHour % 24).padStart(2, '0')}:${String((idx * 17) % 60).padStart(2, '0')}`;
+            const arrTime = `${String((legHour + 1) % 24).padStart(2, '0')}:${String(((idx * 17) + 35) % 60).padStart(2, '0')}`;
+
+            const legMileage = Math.round((30 + Math.random() * 120) * 10) / 10;
+            totalMileage += legMileage;
+
+            legs.push({
+              trainNo,
+              seq: idx + 1,
+              from: fromSt,
+              to: toSt,
+              departTime: deptTime,
+              arriveTime: arrTime,
+              mileage: legMileage
+            });
+          });
+        }
+
+        const depotMeta = MOCK_DEPOT_META[dCode];
+        vehicles.push({
+          vehicleId: v.id,
+          depot: depotMeta ? depotMeta.name : dCode,
+          depotCode: dCode,
+          planId: v.opCode || '',
+          type: getType(v.id),
+          legs,
+          totalMileage: Math.round(totalMileage * 10) / 10
+        });
+
+        if (vehicle && vehicles.length > 0) break;
+      }
+      if (vehicle && vehicles.length > 0) break;
+    }
+
+    return {
+      data: { date, vehicles },
+      meta: { total: vehicles.length, generatedAt: new Date().toISOString() }
+    };
+  }
+
+  // ══════════════════════════════════════════
   // POST /dynamic-report
   // ══════════════════════════════════════════
   async submitDynamicReport(payload) {

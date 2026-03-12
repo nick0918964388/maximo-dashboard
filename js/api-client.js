@@ -156,6 +156,18 @@ class MaximoAPI {
   }
 
   // ══════════════════════════════════════════
+  // Page: train-map.html
+  // ══════════════════════════════════════════
+
+  /** 車組行程追蹤 */
+  getTrainTracking(date, vehicle = null, depot = null) {
+    const params = { date };
+    if (vehicle) params.vehicle = vehicle;
+    if (depot && depot !== 'all') params.depot = depot;
+    return this._fetch('/train-tracking', params);
+  }
+
+  // ══════════════════════════════════════════
   // Action
   // ══════════════════════════════════════════
 

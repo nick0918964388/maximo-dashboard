@@ -132,6 +132,49 @@ test.describe('三頁導航流程測試', () => {
     }
   });
 
+  test('index.html 車輛卡片有地圖連結按鈕', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.waitForTimeout(2000);
+
+    // 確認地圖按鈕存在
+    const mapBtns = page.locator('.vehicle-card-map-btn');
+    const count = await mapBtns.count();
+    expect(count).toBeGreaterThan(0);
+
+    // 確認連結指向 train-map.html?vehicle=...
+    const href = await mapBtns.first().getAttribute('href');
+    expect(href).toContain('train-map.html?vehicle=');
+  });
+
+  test('vehicle-status.html 車輛卡片有地圖連結按鈕', async ({ page }) => {
+    await page.goto('/vehicle-status.html');
+    await page.waitForTimeout(2000);
+
+    // 確認地圖按鈕存在
+    const mapBtns = page.locator('.tl-card-map-btn');
+    const count = await mapBtns.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('index.html 地圖按鈕跳轉到 train-map 並帶入車輛參數', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.waitForTimeout(2000);
+
+    // 點擊第一個地圖按鈕
+    const mapBtn = page.locator('.vehicle-card-map-btn').first();
+    const href = await mapBtn.getAttribute('href');
+    const vehicleId = new URL(href, 'http://localhost').searchParams.get('vehicle');
+
+    await mapBtn.click();
+    await page.waitForTimeout(3000);
+
+    // 確認跳轉到 train-map 且 URL 包含 vehicle 參數
+    await expect(page).toHaveURL(/train-map\.html\?vehicle=/);
+    // 確認搜尋框有車輛 ID
+    const searchInput = page.locator('#vehicleSearch');
+    await expect(searchInput).toHaveValue(vehicleId, { timeout: 10000 });
+  });
+
   test('MockAPI 回傳格式正確', async ({ page }) => {
     await page.goto('/index.html');
     await page.waitForTimeout(500);

@@ -708,12 +708,29 @@ async def get_vehicle_status(
                 *params,
             )
 
-            # Optionally get current dynamic status for each asset
+            # Get dynamic status records active TODAY based on actstart/actfinish:
+            # - both set: today falls between actstart and actfinish
+            # - only actstart: today >= actstart (ongoing, no end date)
+            # - only actfinish: today <= actfinish
+            # - neither: always active (permanent status)
             dynamic_rows = await conn.fetch(
                 """
-                SELECT assetnum, dynamicstatus, description, worktype
+                SELECT assetnum, dynamicstatus, description, worktype,
+                       actstart, actfinish
                 FROM   tra_prod_zz_trainstatus
-                WHERE  actfinish IS NULL
+                WHERE  (
+                    (actstart IS NOT NULL AND actstart != '' AND actfinish IS NOT NULL AND actfinish != ''
+                     AND CURRENT_DATE >= CAST(actstart AS timestamptz)::date
+                     AND CURRENT_DATE <= CAST(actfinish AS timestamptz)::date)
+                    OR
+                    (actstart IS NOT NULL AND actstart != '' AND (actfinish IS NULL OR actfinish = '')
+                     AND CURRENT_DATE >= CAST(actstart AS timestamptz)::date)
+                    OR
+                    ((actstart IS NULL OR actstart = '') AND actfinish IS NOT NULL AND actfinish != ''
+                     AND CURRENT_DATE <= CAST(actfinish AS timestamptz)::date)
+                    OR
+                    ((actstart IS NULL OR actstart = '') AND (actfinish IS NULL OR actfinish = ''))
+                )
                 """
             )
 
@@ -749,16 +766,18 @@ async def get_vehicle_status(
             eq11 = r["eq11"]
             eq11_info = _eq11_info(eq11)
 
-            # Prefer dynamic status if available
+            # Dynamic status (today's active record) determines traffic light;
+            # no active record → default green (可用)
             dyn = dynamic_map.get(assetnum)
             if dyn:
                 color = dyn["color"]
                 status_label = dyn["label"]
                 status_key = dyn["status"]
             else:
-                color = eq11_info["color"]
-                status_label = eq11_info["label"]
-                status_key = eq11_info["status"]
+                _default = DYNAMIC_STATUS_MAP["70"]
+                color = _default["color"]
+                status_label = _default["label"]
+                status_key = _default["status"]
 
             summary["total"] += 1
             summary[color] = summary.get(color, 0) + 1
@@ -1263,3 +1282,131 @@ async def create_dynamic_report(request: Request):
         },
         "mock": True,
     }
+
+
+# ---------------------------------------------------------------------------
+# 11. GET /api/v1/train-tracking
+# ---------------------------------------------------------------------------
+@app.get("/api/v1/train-tracking")
+async def get_train_tracking(
+    date: str = Query(..., description="Date in YYYY-MM-DD format"),
+    vehicle: Optional[str] = Query(None, description="Vehicle group ID (e.g. EP941)"),
+    depot: Optional[str] = Query(None, description="Depot code filter"),
+):
+    """Train tracking data for map display.
+
+    Returns vehicle groups with their scheduled legs (train segments),
+    including departure/arrival times, stations, and mileage.
+    Used by train-map.html to draw routes and estimate positions.
+
+    Query: tra_prod_zz_trainstatement grouped by trainsgrpid.
+    Time fields use 1970-01-01 as date base — we extract HH:MM only.
+    """
+    pool = get_pool()
+    try:
+        async with pool.acquire() as conn:
+            # Build query with optional filters
+            conditions = ["trainstatement_date LIKE $1 || '%'"]
+            params: list = [date]
+            idx = 2
+
+            if vehicle:
+                conditions.append(f"trainsgrpid = ${idx}")
+                params.append(vehicle)
+                idx += 1
+
+            if depot:
+                conditions.append(f"deptid = ${idx}")
+                params.append(depot)
+                idx += 1
+
+            where_clause = " AND ".join(conditions)
+
+            rows = await conn.fetch(
+                f"""
+                SELECT trainsgrpid, deptid, planid,
+                       trainsno, trainsseq, mileage,
+                       trainsno_s_time, trainsno_e_time,
+                       from_station, to_station
+                FROM   tra_prod_zz_trainstatement
+                WHERE  {where_clause}
+                ORDER  BY trainsgrpid, trainsseq::int
+                """,
+                *params,
+            )
+
+            # Also fetch car lines for type detection
+            grpids = list({r["trainsgrpid"] for r in rows if r["trainsgrpid"]})
+
+            asset_type_map: dict[str, Optional[str]] = {}
+            if grpids:
+                line_rows = await conn.fetch(
+                    """
+                    SELECT DISTINCT l.trainsgrpid, l.assetnum,
+                           COALESCE(g.eq3, a.eq3) AS resolved_eq3
+                    FROM   tra_prod_zz_trainstatement_zz_trainstatementline l
+                    LEFT JOIN tra_prod_mxasset a ON a.assetnum = l.assetnum
+                    LEFT JOIN tra_prod_mxasset g
+                           ON g.assetnum = a.zz_cargroup
+                          AND g.eq9 LIKE '%組%'
+                    WHERE  l.trainsgrpid = ANY($1)
+                    """,
+                    grpids,
+                )
+                # Map grpid → vehicle type (first resolved type wins)
+                grp_type_map: dict[str, Optional[str]] = {}
+                for lr in line_rows:
+                    gid = lr["trainsgrpid"]
+                    if gid not in grp_type_map or not grp_type_map[gid]:
+                        eq3 = lr["resolved_eq3"] or ""
+                        grp_type_map[gid] = get_vehicle_type(eq3)
+                asset_type_map = grp_type_map
+
+        # Group by trainsgrpid
+        groups: dict[str, dict] = {}
+        for r in rows:
+            grp_id = r["trainsgrpid"] or ""
+            if not grp_id:
+                continue
+
+            leg = {
+                "trainNo": r["trainsno"] or "",
+                "seq": int(r["trainsseq"]) if r["trainsseq"] else 0,
+                "from": r["from_station"] or "",
+                "to": r["to_station"] or "",
+                "departTime": _extract_time(r["trainsno_s_time"]),
+                "arriveTime": _extract_time(r["trainsno_e_time"]),
+                "mileage": round(float(r["mileage"]), 1) if r["mileage"] else 0,
+            }
+
+            if grp_id not in groups:
+                groups[grp_id] = {
+                    "vehicleId": grp_id,
+                    "depot": DEPOT_NAMES.get(r["deptid"] or "", r["deptid"] or ""),
+                    "depotCode": r["deptid"] or "",
+                    "planId": r["planid"] or "",
+                    "type": asset_type_map.get(grp_id) or "emu",
+                    "legs": [],
+                    "totalMileage": 0,
+                }
+
+            groups[grp_id]["legs"].append(leg)
+            groups[grp_id]["totalMileage"] += leg["mileage"]
+
+        # Round total mileage
+        vehicles = list(groups.values())
+        for v in vehicles:
+            v["totalMileage"] = round(v["totalMileage"], 1)
+
+        return {
+            "data": {
+                "date": date,
+                "vehicles": vehicles,
+            },
+            "meta": {
+                "total": len(vehicles),
+                "generatedAt": _now_iso(),
+            },
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))

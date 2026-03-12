@@ -10,6 +10,7 @@ services:
       - ./index.html:/usr/share/nginx/html/index.html:ro
       - ./vehicle-status.html:/usr/share/nginx/html/vehicle-status.html:ro
       - ./vehicle-history.html:/usr/share/nginx/html/vehicle-history.html:ro
+      - ./train-map.html:/usr/share/nginx/html/train-map.html:ro
       - ./js:/usr/share/nginx/html/js:ro
       - ./favicon.svg:/usr/share/nginx/html/favicon.svg:ro
     depends_on:

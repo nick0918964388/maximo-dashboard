@@ -717,6 +717,38 @@ body::after {
   transform: translateY(12px);
 }
 
+.tl-card-map-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-copper-dim);
+  border: 1px solid var(--border-glass);
+  color: var(--accent-copper);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s;
+  z-index: 2;
+  opacity: 0;
+}
+.tl-card:hover .tl-card-map-btn { opacity: 1; }
+.tl-card-map-btn:hover:not(.disabled) {
+  background: var(--accent-copper-glow);
+  border-color: var(--accent-copper);
+  transform: scale(1.15);
+}
+.tl-card-map-btn.disabled {
+  opacity: 0.25 !important;
+  cursor: not-allowed;
+  pointer-events: auto;
+  filter: grayscale(1);
+}
+
 .tl-card:hover {
   border-color: var(--border-glow);
   box-shadow: var(--shadow-card);
@@ -905,6 +937,10 @@ body::after {
         <span class="arrow">←</span>
         <span>返回總覽</span>
       </a>
+      <a href="train-map.html" class="back-btn" title="列車動態地圖" style="color:var(--text-accent);">
+        <span class="arrow">🗺️</span>
+        <span>列車地圖</span>
+      </a>
       <div class="depot-select-wrapper">
         <select class="depot-select" id="depotSelect">
           <option value="all">全部機務段</option>
@@ -988,11 +1024,11 @@ body::after {
 <div class="tl-tooltip" id="tooltip"></div>
 
 <!-- ═══ API Layer ═══ -->
-<script src="js/config.js"></script>
-<script src="js/shared.js"></script>
-<script src="js/api-client.js"></script>
-<script src="js/mock-data.js"></script>
-<script src="js/data-service.js"></script>
+<script src="js/config.js?v=20260312b"></script>
+<script src="js/shared.js?v=20260312b"></script>
+<script src="js/api-client.js?v=20260312b"></script>
+<script src="js/mock-data.js?v=20260312b"></script>
+<script src="js/data-service.js?v=20260312b"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -1002,6 +1038,7 @@ const depotMeta = MOCK_DEPOT_META;
 let currentDepot = 'all';
 let currentCategory = 'all'; // 'all' | 'power' | 'passenger'
 let lastResponseData = null; // cache for re-rendering on category change
+let operatingVehicleIds = new Set(); // 有實際運用的車輛 ID
 
 // ═══════════════════════════════════════════
 // COUNTER ANIMATION
@@ -1036,10 +1073,17 @@ function renderVehicleCard(v, cardIdx) {
   const delay = (0.03 * cardIdx).toFixed(2);
   const desc = getVehicleDesc(v).replace(/"/g, '&quot;');
   const eta = getVehicleEta(v).replace(/"/g, '&quot;');
+  const hasOps = operatingVehicleIds.has(v.id);
+  const mapBtnClass = hasOps ? 'tl-card-map-btn' : 'tl-card-map-btn disabled';
+  const mapBtnClick = hasOps
+    ? `event.preventDefault();event.stopPropagation();window.location.href='train-map.html?vehicle=${encodeURIComponent(v.id)}'`
+    : `event.preventDefault();event.stopPropagation();`;
+  const mapBtnTitle = hasOps ? `在地圖上查看 ${v.id}` : `${v.id} 今日無運用資料`;
   return `
             <a href="vehicle-history.html?id=${encodeURIComponent(v.id)}" class="tl-card status-${v.statusColor}"
                style="animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s forwards;"
                data-vehicle="${v.id}" data-status="${v.statusLabel}" data-desc="${desc}" data-eta="${eta}" data-color="${v.statusColor}">
+              <span class="${mapBtnClass}" onclick="${mapBtnClick}" title="${mapBtnTitle}">&#x1f5fa;</span>
               <div class="tl-dot ${v.statusColor}"></div>
               <div class="tl-id">${v.id}</div>
               <div class="tl-status-label ${v.statusColor}">${v.statusLabel}</div>
@@ -1080,11 +1124,35 @@ function updateCategoryCounts(byType) {
 // ═══════════════════════════════════════════
 // RENDER (async — via DataService)
 // ═══════════════════════════════════════════
+async function loadOperatingVehicles() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    let result = await dataService.getTrainTracking(today);
+    let vehicles = result.data.vehicles || [];
+    // Mock mode fallback
+    if (vehicles.length === 0 && dataService.mode !== 'api') {
+      result = await dataService.getTrainTracking('2026-02-24');
+      vehicles = result.data.vehicles || [];
+    }
+    operatingVehicleIds = new Set(vehicles.map(v => v.vehicleId));
+  } catch (err) {
+    console.warn('[vehicle-status] 載入運用資料失敗，地圖按鈕將全部停用:', err.message);
+    operatingVehicleIds = new Set(); // empty = all buttons disabled
+  }
+}
+
+let _operatingVehiclesLoaded = false;
+
 async function renderAll() {
   showLoading('vehicleGroups');
 
   try {
-    const resp = await dataService.getVehicleStatus('all', currentDepot);
+    // Load operating vehicles once (date-bound, depot-agnostic); parallel on first call only
+    const fetches = [dataService.getVehicleStatus('all', currentDepot)];
+    if (!_operatingVehiclesLoaded) {
+      fetches.push(loadOperatingVehicles().then(() => { _operatingVehiclesLoaded = true; }));
+    }
+    const [resp] = await Promise.all(fetches);
     lastResponseData = resp.data;
     renderView();
   } catch (err) {

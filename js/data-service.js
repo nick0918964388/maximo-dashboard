@@ -134,6 +134,14 @@ class DataService {
   }
 
   // ══════════════════════════════════════════
+  // Page: train-map.html
+  // ══════════════════════════════════════════
+
+  getTrainTracking(date, vehicle = null, depot = null) {
+    return this._call('getTrainTracking', [date, vehicle, depot]);
+  }
+
+  // ══════════════════════════════════════════
   // Action
   // ══════════════════════════════════════════
 

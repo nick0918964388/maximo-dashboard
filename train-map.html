@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>列車動態地圖 — 台鐵車輛管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   RESET & VARIABLES
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --font-display: 'Outfit', 'Noto Sans TC', sans-serif;
+  --font-body: 'Noto Sans TC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ═══ DARK THEME (Default) ═══ */
+[data-theme="dark"] {
+  --bg-primary: #06090f;
+  --bg-secondary: #0c1220;
+  --bg-card: rgba(14, 22, 38, 0.75);
+  --bg-card-hover: rgba(20, 32, 56, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --border-glass: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(232, 168, 73, 0.15);
+
+  --text-primary: #e8edf5;
+  --text-secondary: #7a8ba8;
+  --text-muted: #4a5873;
+  --text-accent: #e8a849;
+
+  --accent-copper: #e8a849;
+  --accent-copper-dim: rgba(232, 168, 73, 0.12);
+  --accent-copper-glow: rgba(232, 168, 73, 0.3);
+
+  --color-e: #4a90d9;
+  --color-emu: #2dd4a0;
+  --color-dr: #f59e0b;
+  --color-pp: #a78bfa;
+  --color-ck: #f472b6;
+
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
+  --shadow-glow: 0 0 40px rgba(232, 168, 73, 0.06);
+  --scrollbar-color: #4a5873;
+
+  --map-tile-filter: brightness(0.9) contrast(1.1);
+}
+
+/* ═══ LIGHT THEME ═══ */
+[data-theme="light"] {
+  --bg-primary: #f0f2f7;
+  --bg-secondary: #e4e8f0;
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(0, 0, 0, 0.025);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(180, 120, 40, 0.2);
+
+  --text-primary: #1a2035;
+  --text-secondary: #556178;
+  --text-muted: #8d9bb5;
+  --text-accent: #b87a1a;
+
+  --accent-copper: #c07818;
+  --accent-copper-dim: rgba(192, 120, 24, 0.1);
+  --accent-copper-glow: rgba(192, 120, 24, 0.25);
+
+  --color-e: #2563eb;
+  --color-emu: #059669;
+  --color-dr: #d97706;
+  --color-pp: #7c3aed;
+  --color-ck: #db2777;
+
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-glow: 0 0 30px rgba(192, 120, 24, 0.05);
+  --scrollbar-color: #c0c8d8;
+
+  --map-tile-filter: none;
+}
+
+html { scroll-behavior: smooth; }
+
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease,
+              box-shadow 0.4s ease, opacity 0.4s ease !important;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════ */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-glass);
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+  border: 1px solid rgba(232, 168, 73, 0.2);
+  padding: 4px 12px;
+  border-radius: 100px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ═══ NAV LINK ═══ */
+.nav-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  backdrop-filter: blur(20px);
+  white-space: nowrap;
+}
+.nav-link-btn:hover {
+  background: var(--accent-copper);
+  color: #fff;
+  box-shadow: 0 0 20px var(--accent-copper-glow);
+}
+.nav-link-btn .nav-icon { font-size: 15px; }
+
+/* ═══ THEME TOGGLE ═══ */
+.theme-toggle {
+  position: relative;
+  width: 56px;
+  height: 30px;
+  border-radius: 100px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  border-color: var(--accent-copper);
+  box-shadow: 0 0 16px var(--accent-copper-dim);
+}
+.theme-toggle-track {
+  position: absolute;
+  inset: 3px;
+  border-radius: 100px;
+  overflow: hidden;
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+[data-theme="light"] .theme-toggle-thumb {
+  left: calc(100% - 24px);
+  background: #f59e0b;
+}
+
+/* ═══════════════════════════════════════════
+   MAP CONTAINER
+   ═══════════════════════════════════════════ */
+#map {
+  flex: 1;
+  width: 100%;
+  z-index: 1;
+}
+
+/* Dark theme tile filter */
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: var(--map-tile-filter);
+}
+
+/* Override Leaflet popup styles */
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-card) !important;
+  backdrop-filter: blur(24px);
+  font-family: var(--font-body) !important;
+}
+.leaflet-popup-tip {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-glass) !important;
+}
+.leaflet-popup-content {
+  margin: 12px 16px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* Station tooltip */
+.station-tooltip {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px 10px !important;
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: var(--shadow-card) !important;
+  backdrop-filter: blur(16px);
+}
+.station-tooltip::before {
+  border-top-color: var(--border-glass) !important;
+}
+
+/* Station markers */
+.station-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+  border: 2px solid rgba(232, 168, 73, 0.8);
+  opacity: 0.85;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 4px rgba(232, 168, 73, 0.3);
+}
+.station-dot:hover {
+  opacity: 1;
+  transform: scale(2);
+  box-shadow: 0 0 12px var(--accent-copper-glow);
+}
+
+/* Major station markers (larger, with glow) */
+.station-dot.major {
+  width: 14px;
+  height: 14px;
+  opacity: 1;
+  border: 2.5px solid var(--accent-copper);
+  background: var(--bg-primary);
+  box-shadow: 0 0 8px rgba(232, 168, 73, 0.4), 0 0 2px rgba(232, 168, 73, 0.6);
+}
+.station-dot.major:hover {
+  transform: scale(1.5);
+  box-shadow: 0 0 16px var(--accent-copper-glow);
+}
+
+/* ═══════════════════════════════════════════
+   MAP CONTROLS PANEL (overlay on map)
+   ═══════════════════════════════════════════ */
+.map-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+  min-width: 220px;
+}
+
+.control-panel-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-accent);
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+}
+
+/* Vehicle search input */
+.vehicle-search {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all 0.25s ease;
+}
+.vehicle-search::placeholder {
+  color: var(--text-muted);
+}
+.vehicle-search:focus {
+  border-color: var(--accent-copper);
+  box-shadow: 0 0 12px var(--accent-copper-dim);
+}
+
+/* Route legend */
+.route-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.route-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.route-legend-line {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.route-legend-line.rail { background: rgba(120, 140, 170, 0.4); }
+.route-legend-line.planned { background: repeating-linear-gradient(90deg, #f8fafc 0px, #f8fafc 5px, #1e293b 5px, #1e293b 9px); }
+.route-legend-line.completed { background: #4a90d9; }
+.route-legend-line.current { background: #2dd4a0; width: 10px; height: 10px; border-radius: 50%; }
+
+/* Info panel (bottom-right) */
+.info-panel {
+  position: absolute;
+  bottom: 24px;
+  right: 12px;
+  z-index: 1000;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+  min-width: 280px;
+  max-width: 360px;
+  max-height: 50vh;
+  overflow-y: auto;
+  display: none;
+}
+.info-panel.visible { display: block; }
+
+.info-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.info-panel-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-accent);
+}
+.info-panel-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.info-panel-close:hover {
+  background: var(--accent-copper);
+  color: #fff;
+}
+
+.info-panel-body {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Schedule table in info panel */
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+.schedule-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-glass);
+  font-family: var(--font-mono);
+}
+.schedule-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+}
+.schedule-table tr:last-child td { border-bottom: none; }
+.schedule-table .train-no {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.schedule-table .status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.schedule-table .status-dot.completed { background: #4a90d9; }
+.schedule-table .status-dot.running { background: #2dd4a0; }
+.schedule-table .status-dot.pending { background: var(--text-muted); }
+
+/* ═══════════════════════════════════════════
+   VEHICLE SEARCH DROPDOWN
+   ═══════════════════════════════════════════ */
+.search-wrapper {
+  position: relative;
+}
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+  z-index: 100;
+  display: none;
+}
+.search-dropdown.visible { display: block; }
+.search-dropdown-item {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.search-dropdown-item:hover,
+.search-dropdown-item.active {
+  background: var(--accent-copper-dim);
+  color: var(--text-primary);
+}
+.search-dropdown-item .vehicle-type-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.search-dropdown-item .vehicle-type-badge.type-e   { background: rgba(74,144,217,0.2); color: var(--color-e); }
+.search-dropdown-item .vehicle-type-badge.type-emu { background: rgba(45,212,160,0.2); color: var(--color-emu); }
+.search-dropdown-item .vehicle-type-badge.type-dr  { background: rgba(245,158,11,0.2); color: var(--color-dr); }
+.search-dropdown-item .vehicle-type-badge.type-pp  { background: rgba(167,139,250,0.2); color: var(--color-pp); }
+.search-dropdown-item .vehicle-type-badge.type-pc  { background: rgba(244,114,182,0.2); color: var(--color-ck); }
+.search-status {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Route polylines */
+.route-planned { stroke-dasharray: 8 6; }
+
+/* Train position marker — base */
+.train-position-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #2dd4a0;
+  background: rgba(15, 23, 42, 0.85);
+  box-shadow: 0 0 12px rgba(45, 212, 160, 0.4), 0 0 4px rgba(45, 212, 160, 0.6);
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+}
+/* Vehicle type colors */
+.train-position-icon.type-emu { border-color: var(--color-emu); box-shadow: 0 0 14px rgba(45, 212, 160, 0.5); }
+.train-position-icon.type-e   { border-color: var(--color-e);   box-shadow: 0 0 14px rgba(74, 144, 217, 0.5); }
+.train-position-icon.type-dr  { border-color: var(--color-dr);  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
+.train-position-icon.type-pp  { border-color: #a78bfa;          box-shadow: 0 0 14px rgba(167, 139, 250, 0.5); }
+.train-position-icon.type-pc  { border-color: #94a3b8;          box-shadow: 0 0 14px rgba(148, 163, 184, 0.5); }
+/* Pulsing animation when running */
+.train-position-icon.running {
+  animation: pulse-train 1.5s ease-in-out infinite;
+}
+.train-position-icon.running.type-emu {
+  background: rgba(45, 212, 160, 0.2);
+  animation-name: pulse-emu;
+}
+.train-position-icon.running.type-e {
+  background: rgba(74, 144, 217, 0.2);
+  animation-name: pulse-e;
+}
+.train-position-icon.running.type-dr {
+  background: rgba(245, 158, 11, 0.2);
+  animation-name: pulse-dr;
+}
+@keyframes pulse-emu {
+  0%, 100% { box-shadow: 0 0 14px rgba(45,212,160,0.5); }
+  50%      { box-shadow: 0 0 28px rgba(45,212,160,0.8), 0 0 12px rgba(45,212,160,1); }
+}
+@keyframes pulse-e {
+  0%, 100% { box-shadow: 0 0 14px rgba(74,144,217,0.5); }
+  50%      { box-shadow: 0 0 28px rgba(74,144,217,0.8), 0 0 12px rgba(74,144,217,1); }
+}
+@keyframes pulse-dr {
+  0%, 100% { box-shadow: 0 0 14px rgba(245,158,11,0.5); }
+  50%      { box-shadow: 0 0 28px rgba(245,158,11,0.8), 0 0 12px rgba(245,158,11,1); }
+}
+@keyframes pulse-train {
+  0%, 100% { box-shadow: 0 0 14px rgba(45,212,160,0.5); }
+  50%      { box-shadow: 0 0 28px rgba(45,212,160,0.8); }
+}
+/* Vehicle type label under the icon */
+.train-icon-label {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  letter-spacing: 0.5px;
+}
+.train-icon-label.type-emu { color: var(--color-emu); }
+.train-icon-label.type-e   { color: var(--color-e); }
+.train-icon-label.type-dr  { color: var(--color-dr); }
+
+/* Info panel depot/type badges */
+.info-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.info-badge {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-weight: 600;
+  background: var(--accent-copper-dim);
+  color: var(--text-accent);
+}
+.info-badge.type-e   { background: rgba(74,144,217,0.15); color: var(--color-e); }
+.info-badge.type-emu { background: rgba(45,212,160,0.15); color: var(--color-emu); }
+.info-badge.type-dr  { background: rgba(245,158,11,0.15); color: var(--color-dr); }
+.info-mileage {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-accent);
+  margin-bottom: 8px;
+}
+
+/* Loading spinner in search */
+.search-loading {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-glass);
+  border-top: 2px solid var(--accent-copper);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+/* ═══════════════════════════════════════════
+   TIME SLIDER CONTROL
+   ═══════════════════════════════════════════ */
+.time-control {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+  display: none;
+  align-items: center;
+  gap: 12px;
+  min-width: 380px;
+}
+.time-control.visible { display: flex; }
+
+.time-display {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-accent);
+  min-width: 50px;
+  text-align: center;
+}
+
+.time-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-glass);
+  outline: none;
+  cursor: pointer;
+}
+.time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent-copper-glow);
+  transition: transform 0.15s;
+}
+.time-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
+.time-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px var(--accent-copper-glow);
+}
+
+.time-control-btns {
+  display: flex;
+  gap: 4px;
+}
+.time-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.time-btn:hover {
+  background: var(--accent-copper);
+  color: #fff;
+  border-color: var(--accent-copper);
+}
+.time-btn.active {
+  background: var(--accent-copper);
+  color: #fff;
+}
+
+/* Auto-refresh indicator */
+.refresh-indicator {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.refresh-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2dd4a0;
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ═══════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-color); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+  .header-left { gap: 10px; }
+  .header-title { font-size: 18px; }
+  .control-panel { min-width: 180px; }
+  .info-panel { min-width: 240px; max-width: 300px; }
+}
+</style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-badge">LIVE MAP</div>
+      <h1 class="header-title">列車動態地圖</h1>
+    </div>
+    <div class="header-right">
+      <a id="backBtn" href="index.html" class="nav-link-btn" title="返回前一頁" style="display:none"><span class="nav-icon">◀</span><span id="backLabel">返回</span></a>
+      <a href="index.html" class="nav-link-btn" title="回到營運總覽"><span class="nav-icon">📊</span>營運總覽</a>
+      <a href="vehicle-status.html" class="nav-link-btn" title="車輛狀態總覽"><span class="nav-icon">🚦</span>車輛狀態</a>
+      <button class="theme-toggle" id="themeToggle" title="切換深淺色主題">
+        <div class="theme-toggle-track">
+          <div class="theme-toggle-thumb" id="themeThumb">🌙</div>
+        </div>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ MAP ═══ -->
+  <div id="map">
+    <!-- Map controls overlay -->
+    <div class="map-controls">
+      <div class="control-panel">
+        <div class="control-panel-title">車組查詢</div>
+        <div class="search-wrapper">
+          <input type="text" class="vehicle-search" id="vehicleSearch" placeholder="輸入車組號 (如 EP941)" autocomplete="off">
+          <div class="search-dropdown" id="searchDropdown"></div>
+        </div>
+        <div class="route-legend" style="margin-top:12px;">
+          <div class="route-legend-item">
+            <div class="route-legend-line rail"></div>
+            <span>台鐵路網</span>
+          </div>
+          <div class="route-legend-item">
+            <div class="route-legend-line planned"></div>
+            <span>預計路線</span>
+          </div>
+          <div class="route-legend-item">
+            <div class="route-legend-line completed"></div>
+            <span>已完成路線</span>
+          </div>
+          <div class="route-legend-item">
+            <div class="route-legend-line current"></div>
+            <span>目前位置</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time slider control (shown when vehicle selected) -->
+    <div class="time-control" id="timeControl">
+      <div class="time-display" id="timeDisplay">--:--</div>
+      <input type="range" class="time-slider" id="timeSlider" min="0" max="1440" value="0" step="1">
+      <div class="time-control-btns">
+        <button class="time-btn" id="timePlayBtn" title="自動播放">▶</button>
+        <button class="time-btn" id="timeNowBtn" title="跳到現在">⏱</button>
+        <button class="time-btn" id="timeFocusBtn" title="對焦車輛位置">🎯</button>
+      </div>
+      <div class="refresh-indicator" id="refreshIndicator" style="display:none;">
+        <div class="refresh-dot"></div>
+        <span>自動更新</span>
+      </div>
+    </div>
+
+    <!-- Info panel (shown when vehicle selected) -->
+    <div class="info-panel" id="infoPanel">
+      <div class="info-panel-header">
+        <div class="info-panel-title" id="infoPanelTitle">—</div>
+        <button class="info-panel-close" id="infoPanelClose">&times;</button>
+      </div>
+      <div class="info-panel-body" id="infoPanelBody">
+        <p style="color:var(--text-muted);">選擇車組以查看行程資訊</p>
+      </div>
+    </div>
+  </div>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="js/config.js?v=20260312b"></script>
+<script src="js/shared.js?v=20260312b"></script>
+<script src="js/station-coords.js?v=20260312b"></script>
+<script src="js/rail-routes.js?v=20260312b"></script>
+<script src="js/api-client.js?v=20260312b"></script>
+<script src="js/mock-data.js?v=20260312b"></script>
+<script src="js/data-service.js?v=20260312b"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════
+function getTheme() {
+  return localStorage.getItem('car-dashboard-theme') || 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.classList.add('theme-transition');
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('car-dashboard-theme', theme);
+  document.getElementById('themeThumb').textContent = theme === 'dark' ? '🌙' : '☀️';
+  // Switch map tiles
+  updateMapTiles(theme);
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transition');
+  }, 450);
+}
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// Apply saved theme
+const savedTheme = getTheme();
+if (savedTheme !== 'dark') {
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.getElementById('themeThumb').textContent = '☀️';
+}
+
+// ═══════════════════════════════════════════
+// BACK BUTTON — detect referrer page
+// ═══════════════════════════════════════════
+(function() {
+  const backBtn = document.getElementById('backBtn');
+  const backLabel = document.getElementById('backLabel');
+  const ref = document.referrer;
+  if (!ref) return;
+  try {
+    const refUrl = new URL(ref);
+    const path = refUrl.pathname;
+    const pageName = path.split('/').pop();
+    const pageMap = {
+      'index.html':          '營運總覽',
+      'vehicle-status.html': '車輛狀態',
+      'vehicle-history.html':'車輛歷程',
+      '':                    '營運總覽'   // root path
+    };
+    const label = pageMap[pageName];
+    if (label) {
+      backLabel.textContent = '返回' + label;
+      backBtn.href = ref;
+      backBtn.style.display = '';
+    }
+  } catch(e) { /* ignore invalid referrer */ }
+})();
+
+// ═══════════════════════════════════════════
+// MAP INITIALIZATION
+// ═══════════════════════════════════════════
+const TILE_URLS = {
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+};
+const TILE_ATTR = {
+  dark: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  light: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+};
+
+// Taiwan center
+const map = L.map('map', {
+  center: [23.7, 120.96],
+  zoom: 8,
+  zoomControl: false
+});
+
+// Add zoom control to bottom-left
+L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+let currentTileLayer = null;
+
+function updateMapTiles(theme) {
+  if (currentTileLayer) {
+    map.removeLayer(currentTileLayer);
+  }
+  currentTileLayer = L.tileLayer(TILE_URLS[theme], {
+    attribution: TILE_ATTR[theme],
+    maxZoom: 18,
+    subdomains: theme === 'dark' ? 'abcd' : 'abc'
+  }).addTo(map);
+}
+
+// Initial tile layer
+updateMapTiles(savedTheme);
+
+// ═══════════════════════════════════════════
+// DRAW RAIL NETWORK (base grey lines)
+// ═══════════════════════════════════════════
+const railLayers = [];
+
+function drawRailNetwork() {
+  if (typeof RAIL_ROUTES === 'undefined' || !RAIL_ROUTES.features) return;
+
+  RAIL_ROUTES.features.forEach(feature => {
+    const name = feature.properties.name;
+    const geom = feature.geometry;
+
+    if (geom.type === 'MultiLineString') {
+      geom.coordinates.forEach(segment => {
+        // GeoJSON is [lng, lat] → Leaflet needs [lat, lng]
+        const latlngs = segment.map(coord => [coord[1], coord[0]]);
+        const line = L.polyline(latlngs, {
+          color: 'rgba(120, 140, 170, 0.35)',
+          weight: 2.5,
+          opacity: 1,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(map);
+        line.bindTooltip(name, {
+          sticky: true,
+          className: 'station-tooltip',
+          direction: 'top',
+          offset: [0, -8]
+        });
+        railLayers.push(line);
+      });
+    } else if (geom.type === 'LineString') {
+      const latlngs = geom.coordinates.map(coord => [coord[1], coord[0]]);
+      const line = L.polyline(latlngs, {
+        color: 'rgba(120, 140, 170, 0.35)',
+        weight: 2.5,
+        opacity: 1,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+      line.bindTooltip(name, {
+        sticky: true,
+        className: 'station-tooltip',
+        direction: 'top',
+        offset: [0, -8]
+      });
+      railLayers.push(line);
+    }
+  });
+}
+
+drawRailNetwork();
+
+// ═══════════════════════════════════════════
+// DRAW STATION MARKERS
+// ═══════════════════════════════════════════
+const MAJOR_STATIONS = [
+  '基隆', '臺北', '板橋', '桃園', '中壢', '新竹', '竹南', '苗栗',
+  '臺中', '彰化', '員林', '嘉義', '新營', '臺南', '高雄', '屏東', '潮州',
+  '宜蘭', '花蓮', '臺東', '七堵', '松山', '南港', '樹林', '豐原', '二水',
+  '瑞芳', '蘇澳', '玉里', '關山'
+];
+
+const stationMarkers = {};
+
+function drawStationMarkers() {
+  if (typeof STATION_COORDS === 'undefined') return;
+
+  Object.entries(STATION_COORDS).forEach(([name, coords]) => {
+    const isMajor = MAJOR_STATIONS.includes(name);
+
+    const icon = L.divIcon({
+      className: 'station-dot' + (isMajor ? ' major' : ''),
+      iconSize: isMajor ? [14, 14] : [8, 8],
+      iconAnchor: isMajor ? [7, 7] : [4, 4]
+    });
+
+    const marker = L.marker(coords, { icon }).addTo(map);
+    marker.bindTooltip(name, {
+      className: 'station-tooltip',
+      direction: 'top',
+      offset: [0, isMajor ? -10 : -6],
+      permanent: isMajor
+    });
+
+    stationMarkers[name] = marker;
+  });
+}
+
+drawStationMarkers();
+
+// ═══════════════════════════════════════════
+// ZOOM-DEPENDENT STATION LABEL VISIBILITY
+// ═══════════════════════════════════════════
+function updateStationLabels() {
+  const zoom = map.getZoom();
+  Object.entries(stationMarkers).forEach(([name, marker]) => {
+    const isMajor = MAJOR_STATIONS.includes(name);
+    if (isMajor) {
+      // Show permanent labels for major stations at zoom >= 9
+      if (zoom >= 9) {
+        marker.openTooltip();
+      } else {
+        marker.closeTooltip();
+      }
+    }
+  });
+}
+
+map.on('zoomend', updateStationLabels);
+updateStationLabels();
+
+// ═══════════════════════════════════════════
+// RAIL NETWORK PATH FINDER
+// Builds a graph from rail-routes.js segments
+// and finds shortest paths between stations
+// so vehicle routes follow actual track geometry
+// ═══════════════════════════════════════════
+const RailPathFinder = (function() {
+  const nodes = [];          // [{lat, lng, adj: [{idx, dist}]}]
+  const stationNodeMap = {}; // stationName → nodeIndex
+  const pathCache = {};      // "from|to" → path array
+  let initialized = false;
+
+  function geoDist(a, b) {
+    const dlat = a.lat - b.lat, dlng = a.lng - b.lng;
+    return Math.sqrt(dlat * dlat + dlng * dlng);
+  }
+
+  function resolveStation(name) {
+    if (typeof STATION_COORDS === 'undefined') return null;
+
+    // Helper: check if name is in STATION_COORDS AND in the rail network graph
+    function inNetwork(n) {
+      return STATION_COORDS[n] && stationNodeMap[n] !== undefined;
+    }
+
+    // Try exact match (must be in network for path finding)
+    if (inNetwork(name)) return name;
+    const v1 = name.replace(/台/g, '臺');
+    if (inNetwork(v1)) return v1;
+    const v2 = name.replace(/臺/g, '台');
+    if (inNetwork(v2)) return v2;
+
+    // Strip common suffixes: 基地, 機廠, 調車場, 車站, 站
+    const stripped = name.replace(/(基地|機廠|調車場|車站|站)$/, '');
+    if (stripped !== name) {
+      if (inNetwork(stripped)) return stripped;
+      const sv1 = stripped.replace(/台/g, '臺');
+      if (sv1 !== stripped && inNetwork(sv1)) return sv1;
+      const sv2 = stripped.replace(/臺/g, '台');
+      if (sv2 !== stripped && inNetwork(sv2)) return sv2;
+    }
+
+    // Fallback: accept STATION_COORDS-only match (for display, even if not routable)
+    if (STATION_COORDS[name]) return name;
+    if (STATION_COORDS[v1]) return v1;
+    if (STATION_COORDS[v2]) return v2;
+    return null;
+  }
+
+  function init() {
+    if (initialized) return;
+    if (typeof RAIL_ROUTES === 'undefined' || typeof STATION_COORDS === 'undefined') return;
+    initialized = true;
+
+    // Build segment membership index alongside nodes
+    const nodeSeg = [];  // which segment each node belongs to
+    let segIdx = 0;
+
+    RAIL_ROUTES.features.forEach(feature => {
+      const geom = feature.geometry;
+      const coordSets = geom.type === 'MultiLineString' ? geom.coordinates : [geom.coordinates];
+
+      coordSets.forEach(seg => {
+        if (seg.length < 2) return;
+        const startIdx = nodes.length;
+
+        // Add all points in this segment as graph nodes
+        seg.forEach(([lng, lat]) => {
+          nodes.push({ lat, lng, adj: [] });
+          nodeSeg.push(segIdx);
+        });
+
+        // Connect consecutive nodes within the segment
+        for (let i = startIdx; i < nodes.length - 1; i++) {
+          const d = geoDist(nodes[i], nodes[i + 1]);
+          nodes[i].adj.push({ idx: i + 1, dist: d });
+          nodes[i + 1].adj.push({ idx: i, dist: d });
+        }
+
+        segIdx++;
+      });
+    });
+
+    // Bridge gaps: connect nearby nodes on DIFFERENT segments
+    const BRIDGE_DIST = 0.008; // ~900m
+    const railNodeCount = nodes.length;
+    for (let i = 0; i < railNodeCount; i++) {
+      for (let j = i + 1; j < railNodeCount; j++) {
+        if (nodeSeg[i] === nodeSeg[j]) continue;
+        const d = geoDist(nodes[i], nodes[j]);
+        if (d < BRIDGE_DIST) {
+          nodes[i].adj.push({ idx: j, dist: d });
+          nodes[j].adj.push({ idx: i, dist: d });
+        }
+      }
+    }
+
+    // Add STATION NODES to the graph (hybrid approach)
+    // Each station becomes a graph node connected to:
+    //   1) Its nearest rail geometry node (to use track geometry when available)
+    //   2) Neighboring stations (fallback path when rail data is missing)
+    const stationNodeIndices = {};
+    const stationNames = Object.keys(STATION_COORDS);
+
+    stationNames.forEach(name => {
+      const [lat, lng] = STATION_COORDS[name];
+      const idx = nodes.length;
+      nodes.push({ lat, lng, adj: [] });
+      stationNodeIndices[name] = idx;
+
+      // Connect to nearest rail geometry node
+      let bestDist = Infinity, bestIdx = -1;
+      for (let i = 0; i < railNodeCount; i++) {
+        const d = geoDist({ lat, lng }, nodes[i]);
+        if (d < bestDist) { bestDist = d; bestIdx = i; }
+      }
+      if (bestIdx >= 0 && bestDist < 0.1) { // generous threshold for station-to-rail
+        nodes[idx].adj.push({ idx: bestIdx, dist: bestDist });
+        nodes[bestIdx].adj.push({ idx: idx, dist: bestDist });
+      }
+    });
+
+    // Connect consecutive stations (station chain edges)
+    // These act as fallback paths when rail geometry is unavailable
+    // Distance penalized by 1.5x so Dijkstra prefers rail geometry
+    for (let i = 0; i < stationNames.length - 1; i++) {
+      const a = stationNodeIndices[stationNames[i]];
+      const b = stationNodeIndices[stationNames[i + 1]];
+      const d = geoDist(nodes[a], nodes[b]);
+      if (d < 0.2) { // ~22km max — skip cross-line jumps
+        const penalizedDist = d * 1.5;
+        nodes[a].adj.push({ idx: b, dist: penalizedDist });
+        nodes[b].adj.push({ idx: a, dist: penalizedDist });
+      }
+    }
+
+    // Map station names directly to station nodes
+    stationNames.forEach(name => {
+      stationNodeMap[name] = stationNodeIndices[name];
+    });
+
+    console.log(`[RailPathFinder] ${nodes.length} nodes, ${Object.keys(stationNodeMap).length} stations mapped`);
+  }
+
+  // Strip depot/facility suffixes to get base station name
+  function stripStationSuffix(name) {
+    return name.replace(/(基地|機廠|調車場|車站|站)$/, '');
+  }
+
+  // Core Dijkstra path finding between two resolved station names
+  function _dijkstra(from, to) {
+    const cacheKey = from + '|' + to;
+    if (pathCache[cacheKey]) return pathCache[cacheKey];
+    const reverseCacheKey = to + '|' + from;
+    if (pathCache[reverseCacheKey]) {
+      const reversed = pathCache[reverseCacheKey].slice().reverse();
+      pathCache[cacheKey] = reversed;
+      return reversed;
+    }
+
+    const startNode = stationNodeMap[from];
+    const endNode = stationNodeMap[to];
+    if (startNode === undefined || endNode === undefined) return null;
+    if (startNode === endNode) {
+      const result = [STATION_COORDS[from]];
+      pathCache[cacheKey] = result;
+      return result;
+    }
+
+    const n = nodes.length;
+    const dist = new Array(n).fill(Infinity);
+    const prev = new Array(n).fill(-1);
+    const visited = new Uint8Array(n);
+    dist[startNode] = 0;
+
+    for (let iter = 0; iter < n; iter++) {
+      let u = -1, minD = Infinity;
+      for (let i = 0; i < n; i++) {
+        if (!visited[i] && dist[i] < minD) { minD = dist[i]; u = i; }
+      }
+      if (u === -1 || u === endNode) break;
+      visited[u] = 1;
+
+      for (const edge of nodes[u].adj) {
+        if (!visited[edge.idx]) {
+          const nd = dist[u] + edge.dist;
+          if (nd < dist[edge.idx]) {
+            dist[edge.idx] = nd;
+            prev[edge.idx] = u;
+          }
+        }
+      }
+    }
+
+    if (prev[endNode] === -1) return null;
+
+    const path = [];
+    let cur = endNode;
+    while (cur !== -1) {
+      path.unshift([nodes[cur].lat, nodes[cur].lng]);
+      cur = prev[cur];
+    }
+    pathCache[cacheKey] = path;
+    return path;
+  }
+
+  // Dijkstra shortest path between two stations (with suffix fallback)
+  function findPath(fromStation, toStation) {
+    init();
+
+    const from = resolveStation(fromStation);
+    const to = resolveStation(toStation);
+    if (!from || !to) return null;
+
+    // Try direct path first
+    const result = _dijkstra(from, to);
+    if (result) return result;
+
+    // Fallback: try with suffix-stripped station names (e.g. 潮州基地 → 潮州)
+    const strippedFrom = stripStationSuffix(from);
+    const strippedTo = stripStationSuffix(to);
+    const altFrom = strippedFrom !== from ? resolveStation(strippedFrom) : from;
+    const altTo = strippedTo !== to ? resolveStation(strippedTo) : to;
+    if (altFrom !== from || altTo !== to) {
+      return _dijkstra(altFrom || from, altTo || to);
+    }
+    return null;
+  }
+
+  // Interpolate a position along a path at a given progress (0~1)
+  function interpolateOnPath(path, progress) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1 || progress <= 0) return path[0];
+    if (progress >= 1) return path[path.length - 1];
+
+    // Compute cumulative distances
+    const cumDist = [0];
+    for (let i = 1; i < path.length; i++) {
+      const dlat = path[i][0] - path[i - 1][0];
+      const dlng = path[i][1] - path[i - 1][1];
+      cumDist.push(cumDist[i - 1] + Math.sqrt(dlat * dlat + dlng * dlng));
+    }
+    const totalDist = cumDist[cumDist.length - 1];
+    if (totalDist === 0) return path[0];
+
+    const targetDist = progress * totalDist;
+
+    // Find the segment containing the target distance
+    for (let i = 1; i < cumDist.length; i++) {
+      if (cumDist[i] >= targetDist) {
+        const segLen = cumDist[i] - cumDist[i - 1];
+        const t = segLen > 0 ? (targetDist - cumDist[i - 1]) / segLen : 0;
+        return [
+          path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t,
+          path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t
+        ];
+      }
+    }
+    return path[path.length - 1];
+  }
+
+  return { init, findPath, interpolateOnPath };
+})();
+
+// Pre-initialize path finder
+RailPathFinder.init();
+
+// ═══════════════════════════════════════════
+// VEHICLE TRACKING STATE
+// ═══════════════════════════════════════════
+let allVehicles = [];       // Full vehicle list from API
+let routeLayers = [];       // Active polyline layers on map
+let trainMarker = null;     // Current position marker
+let selectedVehicle = null; // Currently displayed vehicle data
+let searchDebounce = null;  // Debounce timer for search
+
+// ═══════════════════════════════════════════
+// ROUTE DRAWING UTILITIES
+// ═══════════════════════════════════════════
+
+/** Get station coordinates by name, returns [lat, lng] or null */
+function getStationLatLng(stationName) {
+  if (typeof STATION_COORDS === 'undefined') return null;
+  // Try exact match first
+  if (STATION_COORDS[stationName]) return STATION_COORDS[stationName];
+  // Try common variants: 台→臺
+  const variant = stationName.replace(/台/g, '臺');
+  if (STATION_COORDS[variant]) return STATION_COORDS[variant];
+  const variant2 = stationName.replace(/臺/g, '台');
+  if (STATION_COORDS[variant2]) return STATION_COORDS[variant2];
+  // Strip common suffixes: 基地, 機廠, 調車場, 車站, 站
+  const stripped = stationName.replace(/(基地|機廠|調車場|車站|站)$/, '');
+  if (stripped !== stationName) {
+    if (STATION_COORDS[stripped]) return STATION_COORDS[stripped];
+    const sv1 = stripped.replace(/台/g, '臺');
+    if (sv1 !== stripped && STATION_COORDS[sv1]) return STATION_COORDS[sv1];
+    const sv2 = stripped.replace(/臺/g, '台');
+    if (sv2 !== stripped && STATION_COORDS[sv2]) return STATION_COORDS[sv2];
+  }
+  return null;
+}
+
+/** Build polyline points for a sequence of legs, following actual rail track geometry */
+function buildRoutePoints(legs) {
+  const points = [];
+  const stationSeq = [];
+  legs.forEach((leg, i) => {
+    const fromCoord = getStationLatLng(leg.from);
+    const toCoord = getStationLatLng(leg.to);
+
+    // Try rail track path first
+    const trackPath = RailPathFinder.findPath(leg.from, leg.to);
+
+    if (trackPath && trackPath.length >= 2) {
+      if (i === 0) {
+        points.push(...trackPath);
+        stationSeq.push(leg.from);
+      } else {
+        // Skip first point to avoid duplicate with previous leg's last point
+        points.push(...trackPath.slice(1));
+      }
+    } else {
+      // Fallback: straight line between stations
+      if (i === 0 && fromCoord) {
+        points.push(fromCoord);
+        stationSeq.push(leg.from);
+      }
+      if (toCoord) points.push(toCoord);
+    }
+
+    if (toCoord) stationSeq.push(leg.to);
+  });
+  return { points, stationSeq };
+}
+
+/** Determine leg status based on current time */
+function getLegStatus(leg) {
+  const now = new Date();
+  const hh = now.getHours();
+  const mm = now.getMinutes();
+  const nowMinutes = hh * 60 + mm;
+
+  const [dH, dM] = (leg.departTime || '00:00').split(':').map(Number);
+  const [aH, aM] = (leg.arriveTime || '00:00').split(':').map(Number);
+  const departMinutes = dH * 60 + dM;
+  const arriveMinutes = aH * 60 + aM;
+
+  if (nowMinutes >= arriveMinutes) return 'completed';
+  if (nowMinutes >= departMinutes) return 'running';
+  return 'pending';
+}
+
+/** Clear all route layers and markers from map */
+function clearRoutes() {
+  routeLayers.forEach(l => map.removeLayer(l));
+  routeLayers = [];
+  if (trainMarker) {
+    map.removeLayer(trainMarker);
+    trainMarker = null;
+  }
+}
+
+/** Compute the current train position for a given vehicle */
+function getTrainPosition(vehicleData) {
+  if (!vehicleData || !vehicleData.legs) return null;
+
+  const legs = vehicleData.legs;
+  let runningLeg = null;
+  let lastCompletedLeg = null;
+  let firstPendingLeg = null;
+
+  for (const leg of legs) {
+    const status = getLegStatus(leg);
+    if (status === 'completed') lastCompletedLeg = leg;
+    else if (status === 'running') { runningLeg = leg; break; }
+    else if (!firstPendingLeg) firstPendingLeg = leg;
+  }
+
+  // If running — interpolate along track
+  if (runningLeg) {
+    const fromCoord = getStationLatLng(runningLeg.from);
+    const toCoord = getStationLatLng(runningLeg.to);
+    if (fromCoord && toCoord) {
+      const nowMinutes = typeof getEffectiveMinutes === 'function' ? getEffectiveMinutes() : (new Date().getHours() * 60 + new Date().getMinutes());
+      const [dH, dM] = runningLeg.departTime.split(':').map(Number);
+      const [aH, aM] = runningLeg.arriveTime.split(':').map(Number);
+      const departMin = dH * 60 + dM;
+      const arriveMin = aH * 60 + aM;
+      const progress = Math.min(1, Math.max(0, (nowMinutes - departMin) / (arriveMin - departMin || 1)));
+
+      const trackPath = RailPathFinder.findPath(runningLeg.from, runningLeg.to);
+      const pos = trackPath && trackPath.length >= 2
+        ? RailPathFinder.interpolateOnPath(trackPath, progress)
+        : [fromCoord[0] + (toCoord[0] - fromCoord[0]) * progress, fromCoord[1] + (toCoord[1] - fromCoord[1]) * progress];
+      return { lat: pos[0], lng: pos[1], leg: runningLeg, status: 'running', progress };
+    }
+  }
+
+  // If stopped at station (between legs) — show at last completed arrival
+  if (lastCompletedLeg) {
+    const coord = getStationLatLng(lastCompletedLeg.to);
+    if (coord) return { lat: coord[0], lng: coord[1], leg: lastCompletedLeg, status: 'stopped', progress: 1 };
+  }
+
+  // If not yet started — show at first departure
+  if (firstPendingLeg) {
+    const coord = getStationLatLng(firstPendingLeg.from);
+    if (coord) return { lat: coord[0], lng: coord[1], leg: firstPendingLeg, status: 'waiting', progress: 0 };
+  }
+
+  // All completed — show at final destination
+  if (legs.length > 0) {
+    const last = legs[legs.length - 1];
+    const coord = getStationLatLng(last.to);
+    if (coord) return { lat: coord[0], lng: coord[1], leg: last, status: 'finished', progress: 1 };
+  }
+
+  return null;
+}
+
+/**
+ * Draw vehicle route on map
+ * @param {Object} vehicleData - vehicle data with legs
+ * @param {string} focusMode - 'route' = fit full route, 'train' = follow train position
+ */
+function drawVehicleRoute(vehicleData, focusMode) {
+  clearRoutes();
+  if (!vehicleData || !vehicleData.legs || vehicleData.legs.length === 0) return;
+
+  const legs = vehicleData.legs;
+  const completedLegs = [];
+  const pendingLegs = [];
+  let runningLeg = null;
+
+  legs.forEach(leg => {
+    const status = getLegStatus(leg);
+    if (status === 'completed') completedLegs.push(leg);
+    else if (status === 'running') runningLeg = leg;
+    else pendingLegs.push(leg);
+  });
+
+  // Determine the ACTIVE leg to display (only show the latest/current leg)
+  // Priority: running > first pending > last completed
+  const activeLeg = runningLeg || (pendingLegs.length > 0 ? pendingLegs[0] : completedLegs[completedLegs.length - 1]);
+  if (!activeLeg) return;
+
+  const activeTrackPath = RailPathFinder.findPath(activeLeg.from, activeLeg.to);
+  const activeStatus = getLegStatus(activeLeg);
+
+  // Build full active leg route for camera bounds
+  const allRoute = activeTrackPath && activeTrackPath.length >= 2
+    ? { points: activeTrackPath }
+    : buildRoutePoints([activeLeg]);
+
+  if (activeStatus === 'running' && activeTrackPath && activeTrackPath.length >= 2) {
+    // Split running leg at current train position
+    const nowMinutes = typeof getEffectiveMinutes === 'function' ? getEffectiveMinutes() : (new Date().getHours() * 60 + new Date().getMinutes());
+    const [dH, dM] = (activeLeg.departTime || '00:00').split(':').map(Number);
+    const [aH, aM] = (activeLeg.arriveTime || '00:00').split(':').map(Number);
+    const departMin = dH * 60 + dM;
+    const arriveMin = aH * 60 + aM;
+    const progress = Math.min(1, Math.max(0, (nowMinutes - departMin) / (arriveMin - departMin || 1)));
+
+    // Compute cumulative distances for split
+    const cumDist = [0];
+    for (let i = 1; i < activeTrackPath.length; i++) {
+      const dlat = activeTrackPath[i][0] - activeTrackPath[i - 1][0];
+      const dlng = activeTrackPath[i][1] - activeTrackPath[i - 1][1];
+      cumDist.push(cumDist[i - 1] + Math.sqrt(dlat * dlat + dlng * dlng));
+    }
+    const totalDist = cumDist[cumDist.length - 1];
+    const targetDist = progress * totalDist;
+
+    let splitIdx = activeTrackPath.length - 1;
+    let splitPoint = activeTrackPath[activeTrackPath.length - 1];
+    for (let i = 1; i < cumDist.length; i++) {
+      if (cumDist[i] >= targetDist) {
+        const segLen = cumDist[i] - cumDist[i - 1];
+        const t = segLen > 0 ? (targetDist - cumDist[i - 1]) / segLen : 0;
+        splitPoint = [
+          activeTrackPath[i - 1][0] + (activeTrackPath[i][0] - activeTrackPath[i - 1][0]) * t,
+          activeTrackPath[i - 1][1] + (activeTrackPath[i][1] - activeTrackPath[i - 1][1]) * t
+        ];
+        splitIdx = i;
+        break;
+      }
+    }
+
+    // Completed portion: start → train position (blue solid)
+    const donePoints = activeTrackPath.slice(0, splitIdx);
+    donePoints.push(splitPoint);
+    if (donePoints.length >= 2) {
+      routeLayers.push(L.polyline(donePoints, {
+        color: '#4a90d9', weight: 4, opacity: 0.9, lineCap: 'round', lineJoin: 'round'
+      }).addTo(map));
+    }
+
+    // Pending portion: train position → end (white dashed)
+    const todoPoints = [splitPoint, ...activeTrackPath.slice(splitIdx)];
+    if (todoPoints.length >= 2) {
+      routeLayers.push(L.polyline(todoPoints, {
+        color: '#1e293b', weight: 6, opacity: 0.8, lineCap: 'round'
+      }).addTo(map));
+      routeLayers.push(L.polyline(todoPoints, {
+        color: '#f8fafc', weight: 3, opacity: 0.85, dashArray: '12 8', lineCap: 'round'
+      }).addTo(map));
+    }
+  } else if (activeStatus === 'completed') {
+    // Fully completed leg — show entire route as blue solid
+    const route = allRoute.points;
+    if (route.length >= 2) {
+      routeLayers.push(L.polyline(route, {
+        color: '#4a90d9', weight: 4, opacity: 0.9, lineCap: 'round', lineJoin: 'round'
+      }).addTo(map));
+    }
+  } else {
+    // Pending leg — show entire route as white dashed
+    const route = allRoute.points;
+    if (route.length >= 2) {
+      routeLayers.push(L.polyline(route, {
+        color: '#1e293b', weight: 6, opacity: 0.8, lineCap: 'round'
+      }).addTo(map));
+      routeLayers.push(L.polyline(route, {
+        color: '#f8fafc', weight: 3, opacity: 0.85, dashArray: '12 8', lineCap: 'round'
+      }).addTo(map));
+    }
+  }
+
+  // Draw CURRENT POSITION marker (always visible, even when stopped)
+  const trainPos = getTrainPosition(vehicleData);
+  if (trainPos) {
+    const statusLabels = { running: '行駛中', stopped: '停靠中', waiting: '待發車', finished: '已完成' };
+    const vType = vehicleData.type || '';
+    const typeClass = vType ? ' type-' + vType : '';
+    const runClass = trainPos.status === 'running' ? ' running' : '';
+
+    // SVG icons per vehicle type (24x24 viewBox)
+    const typeIcons = {
+      emu: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="11" rx="2"/><line x1="8" y1="6" x2="8" y2="17"/><line x1="16" y1="6" x2="16" y2="17"/><line x1="6" y1="17" x2="4" y2="20"/><line x1="18" y1="17" x2="20" y2="20"/><line x1="9" y1="3" x2="12" y2="6"/><line x1="15" y1="3" x2="12" y2="6"/><circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>',
+      e: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="17" x2="5" y2="20"/><line x1="17" y1="17" x2="19" y2="20"/><line x1="9" y1="3" x2="12" y2="7"/><line x1="15" y1="3" x2="12" y2="7"/><path d="M9 3h6" /><circle cx="8" cy="14.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
+      dr: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="10" y1="7" x2="10" y2="17"/><rect x="3" y="9" width="5" height="4" rx="0.5"/><line x1="6" y1="17" x2="4" y2="20"/><line x1="18" y1="17" x2="20" y2="20"/><circle cx="14" cy="12" r="2" /><circle cx="14" cy="12" r="0.8" fill="currentColor" stroke="none"/></svg>',
+      pp: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-2 10H6L4 7z"/><line x1="7" y1="17" x2="5" y2="20"/><line x1="17" y1="17" x2="19" y2="20"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="10" x2="16" y2="14"/><line x1="12" y1="4" x2="12" y2="7"/></svg>'
+    };
+    const iconSvg = typeIcons[vType] || typeIcons.emu;
+    const typeColors = { emu: '#2dd4a0', e: '#4a90d9', dr: '#f59e0b', pp: '#a78bfa', pc: '#94a3b8' };
+    const iconColor = typeColors[vType] || '#2dd4a0';
+
+    const trainIcon = L.divIcon({
+      className: 'leaflet-zoom-animated train-position-icon' + typeClass + runClass,
+      html: `<div style="color:${iconColor};display:flex;align-items:center;justify-content:center">${iconSvg}</div><div class="train-icon-label${typeClass}">${vehicleData.vehicleId}</div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+    trainMarker = L.marker([trainPos.lat, trainPos.lng], { icon: trainIcon, zIndexOffset: 1000 }).addTo(map);
+    trainMarker.bindTooltip(
+      `<b>${vehicleData.vehicleId}</b><br>${trainPos.leg.trainNo}: ${trainPos.leg.from} → ${trainPos.leg.to}<br>${statusLabels[trainPos.status] || ''}`,
+      { className: 'station-tooltip', direction: 'top', offset: [0, -24], permanent: false }
+    );
+    routeLayers.push(trainMarker);
+  }
+
+  // Draw STATION MARKERS at departure/arrival of active leg only
+  const drawnStations = new Set();
+  [activeLeg].forEach(leg => {
+    [leg.from, leg.to].forEach(stName => {
+      if (drawnStations.has(stName)) return;
+      const coord = getStationLatLng(stName);
+      if (!coord) return;
+      drawnStations.add(stName);
+      const stMarker = L.circleMarker(coord, {
+        radius: 6,
+        fillColor: '#e8a849',
+        fillOpacity: 0.9,
+        color: '#fff',
+        weight: 2,
+        zIndexOffset: 500
+      }).addTo(map);
+      stMarker.bindTooltip(stName, {
+        className: 'station-tooltip',
+        direction: 'top',
+        offset: [0, -8],
+        permanent: false
+      });
+      routeLayers.push(stMarker);
+    });
+  });
+
+  // Camera control based on focus mode
+  if (focusMode === 'train' && trainPos) {
+    // Smooth fly to train position with close zoom
+    map.flyTo([trainPos.lat, trainPos.lng], 12, {
+      duration: 0.8,
+      easeLinearity: 0.5
+    });
+  } else if (allRoute.points.length >= 2) {
+    // Fit to full route bounds
+    const bounds = L.latLngBounds(allRoute.points);
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 11 });
+  }
+}
+
+// ═══════════════════════════════════════════
+// INFO PANEL RENDERING
+// ═══════════════════════════════════════════
+function showInfoPanel(vehicleData) {
+  selectedVehicle = vehicleData;
+  const panel = document.getElementById('infoPanel');
+  const title = document.getElementById('infoPanelTitle');
+  const body = document.getElementById('infoPanelBody');
+
+  title.textContent = vehicleData.vehicleId;
+
+  const typeClass = vehicleData.type ? `type-${vehicleData.type}` : '';
+  const typeLabel = { e: '電力機車', emu: '電聯車', dr: '柴聯/柴客', pp: '推拉式', pc: '客車' }[vehicleData.type] || vehicleData.type;
+
+  let html = `<div class="info-meta">`;
+  html += `<span class="info-badge ${typeClass}">${typeLabel}</span>`;
+  html += `<span class="info-badge">${vehicleData.depot}</span>`;
+  if (vehicleData.planId) html += `<span class="info-badge">${vehicleData.planId}</span>`;
+  html += `</div>`;
+  html += `<div class="info-mileage">總里程：${vehicleData.totalMileage} km</div>`;
+
+  if (vehicleData.legs && vehicleData.legs.length > 0) {
+    html += `<table class="schedule-table">`;
+    html += `<thead><tr><th></th><th>車次</th><th>起站</th><th>迄站</th><th>發車</th><th>到站</th></tr></thead>`;
+    html += `<tbody>`;
+    vehicleData.legs.forEach(leg => {
+      const status = getLegStatus(leg);
+      const dotClass = status === 'completed' ? 'completed' : status === 'running' ? 'running' : 'pending';
+      html += `<tr>`;
+      html += `<td><span class="status-dot ${dotClass}"></span></td>`;
+      html += `<td class="train-no">${leg.trainNo}</td>`;
+      html += `<td>${leg.from}</td>`;
+      html += `<td>${leg.to}</td>`;
+      html += `<td>${leg.departTime}</td>`;
+      html += `<td>${leg.arriveTime}</td>`;
+      html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+  } else {
+    html += `<p style="color:var(--text-muted);">今日無排班資料</p>`;
+  }
+
+  body.innerHTML = html;
+  panel.classList.add('visible');
+}
+
+// ═══════════════════════════════════════════
+// VEHICLE SEARCH & SELECTION
+// ═══════════════════════════════════════════
+const vehicleSearchInput = document.getElementById('vehicleSearch');
+const searchDropdown = document.getElementById('searchDropdown');
+
+/** Load all vehicles for the current date */
+async function loadAllVehicles() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    let result = await dataService.getTrainTracking(today);
+    allVehicles = result.data.vehicles || [];
+    // If no data for today (mock mode), try mock reference date
+    if (allVehicles.length === 0 && dataService.mode !== 'api') {
+      result = await dataService.getTrainTracking('2026-02-24');
+      allVehicles = result.data.vehicles || [];
+      if (allVehicles.length > 0) {
+        console.log(`[TrainMap] 今日無資料，載入 2026-02-24 模擬資料`);
+      }
+    }
+    console.log(`[TrainMap] 載入 ${allVehicles.length} 個車組`);
+  } catch (err) {
+    console.error('[TrainMap] 載入車組失敗:', err.message);
+    allVehicles = [];
+  }
+}
+
+/** Show dropdown suggestions matching query */
+function showSuggestions(query) {
+  if (!query) {
+    searchDropdown.classList.remove('visible');
+    return;
+  }
+  const q = query.toUpperCase();
+  const matches = allVehicles
+    .filter(v => v.vehicleId.toUpperCase().includes(q))
+    .slice(0, 15);
+
+  if (matches.length === 0) {
+    searchDropdown.innerHTML = `<div class="search-status">找不到符合的車組</div>`;
+    searchDropdown.classList.add('visible');
+    return;
+  }
+
+  searchDropdown.innerHTML = matches.map(v => {
+    const typeClass = v.type ? `type-${v.type}` : '';
+    const typeLabel = { e: 'E', emu: 'EMU', dr: 'DR', pp: 'PP', pc: 'PC' }[v.type] || '';
+    return `<div class="search-dropdown-item" data-vehicle-id="${v.vehicleId}">
+      <span>${v.vehicleId}</span>
+      <span class="vehicle-type-badge ${typeClass}">${typeLabel}</span>
+    </div>`;
+  }).join('');
+
+  searchDropdown.classList.add('visible');
+}
+
+/** Select a vehicle by ID */
+function selectVehicle(vehicleId) {
+  const vehicle = allVehicles.find(v => v.vehicleId === vehicleId);
+  if (!vehicle) {
+    console.warn('[TrainMap] 車組未找到:', vehicleId);
+    return;
+  }
+
+  vehicleSearchInput.value = vehicleId;
+  searchDropdown.classList.remove('visible');
+
+  // Update URL without reload
+  const url = new URL(window.location);
+  url.searchParams.set('vehicle', vehicleId);
+  history.replaceState(null, '', url);
+
+  drawVehicleRoute(vehicle);
+  showInfoPanel(vehicle);
+  console.log(`[TrainMap] 選取車組: ${vehicleId}, ${vehicle.legs.length} 個運用區間`);
+}
+
+// Search input events
+vehicleSearchInput.addEventListener('input', () => {
+  const query = vehicleSearchInput.value.trim();
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => showSuggestions(query), 150);
+});
+
+vehicleSearchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const query = vehicleSearchInput.value.trim().toUpperCase();
+    if (query) {
+      // Try exact match first
+      const exact = allVehicles.find(v => v.vehicleId.toUpperCase() === query);
+      if (exact) {
+        selectVehicle(exact.vehicleId);
+      } else {
+        // Select first suggestion
+        const first = allVehicles.find(v => v.vehicleId.toUpperCase().includes(query));
+        if (first) selectVehicle(first.vehicleId);
+      }
+    }
+    searchDropdown.classList.remove('visible');
+  } else if (e.key === 'Escape') {
+    searchDropdown.classList.remove('visible');
+  }
+});
+
+// Dropdown click
+searchDropdown.addEventListener('click', (e) => {
+  const item = e.target.closest('.search-dropdown-item');
+  if (item) {
+    selectVehicle(item.dataset.vehicleId);
+  }
+});
+
+// Close dropdown on click outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-wrapper')) {
+    searchDropdown.classList.remove('visible');
+  }
+});
+
+// ═══════════════════════════════════════════
+// INFO PANEL CLOSE
+// ═══════════════════════════════════════════
+document.getElementById('infoPanelClose').addEventListener('click', () => {
+  document.getElementById('infoPanel').classList.remove('visible');
+  clearRoutes();
+  selectedVehicle = null;
+  vehicleSearchInput.value = '';
+  // Remove vehicle from URL
+  const url = new URL(window.location);
+  url.searchParams.delete('vehicle');
+  history.replaceState(null, '', url);
+});
+
+// ═══════════════════════════════════════════
+// URL PARAMETER SUPPORT + INITIAL LOAD
+// ═══════════════════════════════════════════
+const urlParams = new URLSearchParams(window.location.search);
+const vehicleParam = urlParams.get('vehicle');
+
+if (vehicleParam) {
+  vehicleSearchInput.value = vehicleParam;
+}
+
+// Load vehicles on startup, then auto-select from URL param
+loadAllVehicles().then(() => {
+  if (vehicleParam) {
+    selectVehicle(vehicleParam);
+  }
+});
+
+// ═══════════════════════════════════════════
+// PHASE 5: TIME SLIDER + AUTO-REFRESH
+// ═══════════════════════════════════════════
+const timeSlider = document.getElementById('timeSlider');
+const timeDisplay = document.getElementById('timeDisplay');
+const timeControl = document.getElementById('timeControl');
+const timePlayBtn = document.getElementById('timePlayBtn');
+const timeNowBtn = document.getElementById('timeNowBtn');
+const refreshIndicator = document.getElementById('refreshIndicator');
+
+let simulatedTime = null;  // null = use real time, number = minutes from midnight
+let playInterval = null;   // interval for auto-play
+let autoRefreshInterval = null;
+
+/** Get current effective time in minutes from midnight */
+function getEffectiveMinutes() {
+  if (simulatedTime !== null) return simulatedTime;
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+/** Format minutes to HH:MM */
+function formatTime(minutes) {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/** Override getLegStatus to use effective time */
+const _originalGetLegStatus = getLegStatus;
+getLegStatus = function(leg) {
+  const nowMinutes = getEffectiveMinutes();
+  const [dH, dM] = (leg.departTime || '00:00').split(':').map(Number);
+  const [aH, aM] = (leg.arriveTime || '00:00').split(':').map(Number);
+  const departMinutes = dH * 60 + dM;
+  const arriveMinutes = aH * 60 + aM;
+  if (nowMinutes >= arriveMinutes) return 'completed';
+  if (nowMinutes >= departMinutes) return 'running';
+  return 'pending';
+};
+
+/** Track whether we should follow the train or show full route */
+let followTrainMode = true;
+
+/** Update route and info panel for current time */
+function refreshCurrentView() {
+  if (!selectedVehicle) return;
+  drawVehicleRoute(selectedVehicle, followTrainMode ? 'train' : 'route');
+  showInfoPanel(selectedVehicle);
+}
+
+/** Update time display and slider */
+function syncTimeUI() {
+  const mins = getEffectiveMinutes();
+  timeDisplay.textContent = formatTime(mins);
+  timeSlider.value = mins;
+}
+
+// Show time control when vehicle is selected
+const _originalSelectVehicle = selectVehicle;
+selectVehicle = function(vehicleId) {
+  followTrainMode = false; // first draw: show full route overview
+  _originalSelectVehicle(vehicleId);
+  if (selectedVehicle) {
+    timeControl.classList.add('visible');
+    syncTimeUI();
+    followTrainMode = true; // subsequent updates: follow train
+    startAutoRefresh();
+  }
+};
+
+// Hide time control on close
+const origCloseHandler = document.getElementById('infoPanelClose').onclick;
+document.getElementById('infoPanelClose').addEventListener('click', () => {
+  timeControl.classList.remove('visible');
+  stopAutoPlay();
+  stopAutoRefresh();
+  simulatedTime = null;
+});
+
+// Time slider input
+timeSlider.addEventListener('input', () => {
+  simulatedTime = parseInt(timeSlider.value);
+  timeDisplay.textContent = formatTime(simulatedTime);
+  stopAutoRefresh();
+  refreshIndicator.style.display = 'none';
+  refreshCurrentView();
+});
+
+// Focus button — zoom to train's current position
+const timeFocusBtn = document.getElementById('timeFocusBtn');
+timeFocusBtn.addEventListener('click', () => {
+  if (!selectedVehicle) return;
+  const trainPos = getTrainPosition(selectedVehicle);
+  if (trainPos) {
+    followTrainMode = true;
+    map.flyTo([trainPos.lat, trainPos.lng], 13, { duration: 1.0 });
+  }
+});
+
+// Now button — reset to real time
+timeNowBtn.addEventListener('click', () => {
+  simulatedTime = null;
+  syncTimeUI();
+  refreshCurrentView();
+  startAutoRefresh();
+});
+
+// Play button — animate through the day
+timePlayBtn.addEventListener('click', () => {
+  if (playInterval) {
+    stopAutoPlay();
+  } else {
+    startAutoPlay();
+  }
+});
+
+function startAutoPlay() {
+  stopAutoRefresh();
+  refreshIndicator.style.display = 'none';
+  if (simulatedTime === null) simulatedTime = getEffectiveMinutes();
+  timePlayBtn.classList.add('active');
+  timePlayBtn.textContent = '⏸';
+  playInterval = setInterval(() => {
+    simulatedTime = (simulatedTime + 5) % 1440; // advance 5 min per tick
+    syncTimeUI();
+    refreshCurrentView();
+  }, 500); // tick every 500ms
+}
+
+function stopAutoPlay() {
+  if (playInterval) {
+    clearInterval(playInterval);
+    playInterval = null;
+  }
+  timePlayBtn.classList.remove('active');
+  timePlayBtn.textContent = '▶';
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  if (simulatedTime !== null) return; // no auto-refresh in simulated mode
+  refreshIndicator.style.display = 'flex';
+  autoRefreshInterval = setInterval(() => {
+    if (simulatedTime !== null) return;
+    syncTimeUI();
+    refreshCurrentView();
+  }, 30000); // every 30 seconds
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
+  refreshIndicator.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+// MAP RESIZE HANDLER
+// ═══════════════════════════════════════════
+window.addEventListener('resize', () => {
+  map.invalidateSize();
+});
+</script>
+
+</body>
+</html>
