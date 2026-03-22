@@ -233,10 +233,7 @@ body {
   z-index: 1;
 }
 
-/* Dark theme tile filter */
-[data-theme="dark"] .leaflet-tile-pane {
-  filter: var(--map-tile-filter);
-}
+/* Reserved for future tile overlay filters */
 
 /* Override Leaflet popup styles */
 .leaflet-popup-content-wrapper {
@@ -592,10 +589,48 @@ body {
   0%, 100% { box-shadow: 0 0 14px rgba(45,212,160,0.5); }
   50%      { box-shadow: 0 0 28px rgba(45,212,160,0.8); }
 }
+/* Direction indicator arrow */
+.train-direction-arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  filter: drop-shadow(0 0 6px currentColor);
+  z-index: 2;
+}
+.train-direction-arrow.northbound {
+  top: -14px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 14px solid currentColor;
+}
+.train-direction-arrow.southbound {
+  bottom: -14px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 14px solid currentColor;
+}
+/* Animate direction arrow for running trains */
+.train-position-icon.running .train-direction-arrow.northbound {
+  animation: arrow-bounce-up 1.2s ease-in-out infinite;
+}
+.train-position-icon.running .train-direction-arrow.southbound {
+  animation: arrow-bounce-down 1.2s ease-in-out infinite;
+}
+@keyframes arrow-bounce-up {
+  0%, 100% { top: -14px; }
+  50% { top: -19px; }
+}
+@keyframes arrow-bounce-down {
+  0%, 100% { bottom: -14px; }
+  50% { bottom: -19px; }
+}
+
 /* Vehicle type label under the icon */
 .train-icon-label {
   position: absolute;
-  bottom: -16px;
+  bottom: -20px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 10px;
@@ -867,13 +902,14 @@ body {
   </div>
 
 <!-- ═══ SCRIPTS ═══ -->
-<script src="js/config.js?v=20260312b"></script>
-<script src="js/shared.js?v=20260312b"></script>
-<script src="js/station-coords.js?v=20260312b"></script>
-<script src="js/rail-routes.js?v=20260312b"></script>
-<script src="js/api-client.js?v=20260312b"></script>
-<script src="js/mock-data.js?v=20260312b"></script>
-<script src="js/data-service.js?v=20260312b"></script>
+<script src="js/config.js?v=20260312c"></script>
+<script src="js/shared.js?v=20260312c"></script>
+<script src="js/taiwan-outline.js?v=20260317"></script>
+<script src="js/station-coords.js?v=20260312c"></script>
+<script src="js/rail-routes.js?v=20260312c"></script>
+<script src="js/api-client.js?v=20260312c"></script>
+<script src="js/mock-data.js?v=20260312c"></script>
+<script src="js/data-service.js?v=20260312c"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -937,48 +973,79 @@ if (savedTheme !== 'dark') {
 // ═══════════════════════════════════════════
 // MAP INITIALIZATION
 // ═══════════════════════════════════════════
-const TILE_URLS = {
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  light: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-};
-const TILE_ATTR = {
-  dark: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-  light: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+// OpenRailwayMap overlay (transparent background, railway lines only)
+const ORM_URL = 'https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png';
+const ORM_ATTR = '&copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>';
+
+// Theme-specific Taiwan fill/stroke colors
+const TW_STYLE = {
+  dark:  { fill: '#1a2332', stroke: 'rgba(100,130,170,0.25)', ocean: '#0e1626' },
+  light: { fill: '#e8ecf0', stroke: 'rgba(80,100,130,0.3)',  ocean: '#c8d8e8' }
 };
 
-// Taiwan center
+// Taiwan center with bounded view
+const TAIWAN_BOUNDS = L.latLngBounds([21.5, 119.0], [26.0, 122.5]);
 const map = L.map('map', {
   center: [23.7, 120.96],
   zoom: 8,
-  zoomControl: false
+  zoomControl: false,
+  maxBounds: TAIWAN_BOUNDS.pad(0.3),
+  minZoom: 7
 });
 
 // Add zoom control to bottom-left
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-let currentTileLayer = null;
+// Custom pane for Taiwan outline (below tiles, below overlays)
+map.createPane('taiwanPane');
+map.getPane('taiwanPane').style.zIndex = 150;
+
+let taiwanLayer = null;
+let ormLayer = null;
+const railLayers = [];
 
 function updateMapTiles(theme) {
-  if (currentTileLayer) {
-    map.removeLayer(currentTileLayer);
+  const style = TW_STYLE[theme] || TW_STYLE.dark;
+
+  // Set ocean background via map container
+  map.getContainer().style.background = style.ocean;
+
+  // Draw Taiwan outline in bottom pane (below ORM tiles)
+  if (taiwanLayer) map.removeLayer(taiwanLayer);
+  if (typeof TAIWAN_OUTLINE !== 'undefined') {
+    taiwanLayer = L.geoJSON(TAIWAN_OUTLINE, {
+      pane: 'taiwanPane',
+      style: {
+        fillColor: style.fill,
+        fillOpacity: 1,
+        color: style.stroke,
+        weight: 1.5,
+        opacity: 1
+      }
+    }).addTo(map);
   }
-  currentTileLayer = L.tileLayer(TILE_URLS[theme], {
-    attribution: TILE_ATTR[theme],
-    maxZoom: 18,
-    subdomains: theme === 'dark' ? 'abcd' : 'abc'
-  }).addTo(map);
+
+  // ORM overlay disabled — using local rail-routes.js (same OSM source, HSR excluded)
+  if (ormLayer) map.removeLayer(ormLayer);
+  ormLayer = null;
+
+  // Update rail line colors for theme
+  const rlColor = theme === 'dark' ? 'rgba(200, 155, 100, 0.7)' : 'rgba(160, 100, 60, 0.6)';
+  railLayers.forEach(line => line.setStyle({ color: rlColor }));
 }
 
-// Initial tile layer
+// Initial layers
 updateMapTiles(savedTheme);
 
 // ═══════════════════════════════════════════
-// DRAW RAIL NETWORK (base grey lines)
+// DRAW RAIL NETWORK (台鐵路線, OSM source)
 // ═══════════════════════════════════════════
-const railLayers = [];
 
 function drawRailNetwork() {
   if (typeof RAIL_ROUTES === 'undefined' || !RAIL_ROUTES.features) return;
+
+  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const railLineColor = theme === 'dark' ? 'rgba(200, 155, 100, 0.7)' : 'rgba(160, 100, 60, 0.6)';
 
   RAIL_ROUTES.features.forEach(feature => {
     const name = feature.properties.name;
@@ -989,35 +1056,25 @@ function drawRailNetwork() {
         // GeoJSON is [lng, lat] → Leaflet needs [lat, lng]
         const latlngs = segment.map(coord => [coord[1], coord[0]]);
         const line = L.polyline(latlngs, {
-          color: 'rgba(120, 140, 170, 0.35)',
+          color: railLineColor,
           weight: 2.5,
           opacity: 1,
           lineCap: 'round',
-          lineJoin: 'round'
+          lineJoin: 'round',
+          interactive: false
         }).addTo(map);
-        line.bindTooltip(name, {
-          sticky: true,
-          className: 'station-tooltip',
-          direction: 'top',
-          offset: [0, -8]
-        });
         railLayers.push(line);
       });
     } else if (geom.type === 'LineString') {
       const latlngs = geom.coordinates.map(coord => [coord[1], coord[0]]);
       const line = L.polyline(latlngs, {
-        color: 'rgba(120, 140, 170, 0.35)',
+        color: railLineColor,
         weight: 2.5,
         opacity: 1,
         lineCap: 'round',
-        lineJoin: 'round'
+        lineJoin: 'round',
+        interactive: false
       }).addTo(map);
-      line.bindTooltip(name, {
-        sticky: true,
-        className: 'station-tooltip',
-        direction: 'top',
-        offset: [0, -8]
-      });
       railLayers.push(line);
     }
   });
@@ -1631,15 +1688,29 @@ function drawVehicleRoute(vehicleData, focusMode) {
     const typeColors = { emu: '#2dd4a0', e: '#4a90d9', dr: '#f59e0b', pp: '#a78bfa', pc: '#94a3b8' };
     const iconColor = typeColors[vType] || '#2dd4a0';
 
+    // Determine direction: compare from/to station latitudes
+    let directionHtml = '';
+    let directionLabel = '';
+    if (trainPos.leg && trainPos.status !== 'finished') {
+      const fromCoord = getStationLatLng(trainPos.leg.from);
+      const toCoord = getStationLatLng(trainPos.leg.to);
+      if (fromCoord && toCoord && Math.abs(fromCoord[0] - toCoord[0]) > 0.01) {
+        const isNorthbound = toCoord[0] > fromCoord[0];
+        const dirClass = isNorthbound ? 'northbound' : 'southbound';
+        directionLabel = isNorthbound ? ' (北上)' : ' (南下)';
+        directionHtml = `<div class="train-direction-arrow ${dirClass}" style="color:${iconColor}"></div>`;
+      }
+    }
+
     const trainIcon = L.divIcon({
       className: 'leaflet-zoom-animated train-position-icon' + typeClass + runClass,
-      html: `<div style="color:${iconColor};display:flex;align-items:center;justify-content:center">${iconSvg}</div><div class="train-icon-label${typeClass}">${vehicleData.vehicleId}</div>`,
+      html: `${directionHtml}<div style="color:${iconColor};display:flex;align-items:center;justify-content:center">${iconSvg}</div><div class="train-icon-label${typeClass}">${vehicleData.vehicleId}</div>`,
       iconSize: [40, 40],
       iconAnchor: [20, 20]
     });
     trainMarker = L.marker([trainPos.lat, trainPos.lng], { icon: trainIcon, zIndexOffset: 1000 }).addTo(map);
     trainMarker.bindTooltip(
-      `<b>${vehicleData.vehicleId}</b><br>${trainPos.leg.trainNo}: ${trainPos.leg.from} → ${trainPos.leg.to}<br>${statusLabels[trainPos.status] || ''}`,
+      `<b>${vehicleData.vehicleId}</b>${directionLabel}<br>${trainPos.leg.trainNo}: ${trainPos.leg.from} → ${trainPos.leg.to}<br>${statusLabels[trainPos.status] || ''}`,
       { className: 'station-tooltip', direction: 'top', offset: [0, -24], permanent: false }
     );
     routeLayers.push(trainMarker);
@@ -1766,7 +1837,8 @@ function showSuggestions(query) {
   }
   const q = query.toUpperCase();
   const matches = allVehicles
-    .filter(v => v.vehicleId.toUpperCase().includes(q))
+    .filter(v => v.vehicleId.toUpperCase().includes(q) ||
+      (v.carNumbers && v.carNumbers.some(c => c.toUpperCase().includes(q))))
     .slice(0, 15);
 
   if (matches.length === 0) {
@@ -1778,8 +1850,14 @@ function showSuggestions(query) {
   searchDropdown.innerHTML = matches.map(v => {
     const typeClass = v.type ? `type-${v.type}` : '';
     const typeLabel = { e: 'E', emu: 'EMU', dr: 'DR', pp: 'PP', pc: 'PC' }[v.type] || '';
+    // Show matched car number if match was via carNumbers, not vehicleId
+    let matchHint = '';
+    if (!v.vehicleId.toUpperCase().includes(q) && v.carNumbers) {
+      const matched = v.carNumbers.find(c => c.toUpperCase().includes(q));
+      if (matched) matchHint = ` <span style="opacity:0.6;font-size:0.85em">(含 ${matched})</span>`;
+    }
     return `<div class="search-dropdown-item" data-vehicle-id="${v.vehicleId}">
-      <span>${v.vehicleId}</span>
+      <span>${v.vehicleId}${matchHint}</span>
       <span class="vehicle-type-badge ${typeClass}">${typeLabel}</span>
     </div>`;
   }).join('');
@@ -1820,13 +1898,15 @@ vehicleSearchInput.addEventListener('keydown', (e) => {
     e.preventDefault();
     const query = vehicleSearchInput.value.trim().toUpperCase();
     if (query) {
-      // Try exact match first
-      const exact = allVehicles.find(v => v.vehicleId.toUpperCase() === query);
+      // Try exact match first (vehicleId or carNumbers)
+      const exact = allVehicles.find(v => v.vehicleId.toUpperCase() === query ||
+        (v.carNumbers && v.carNumbers.some(c => c.toUpperCase() === query)));
       if (exact) {
         selectVehicle(exact.vehicleId);
       } else {
         // Select first suggestion
-        const first = allVehicles.find(v => v.vehicleId.toUpperCase().includes(query));
+        const first = allVehicles.find(v => v.vehicleId.toUpperCase().includes(query) ||
+          (v.carNumbers && v.carNumbers.some(c => c.toUpperCase().includes(query))));
         if (first) selectVehicle(first.vehicleId);
       }
     }
@@ -1878,7 +1958,15 @@ if (vehicleParam) {
 // Load vehicles on startup, then auto-select from URL param
 loadAllVehicles().then(() => {
   if (vehicleParam) {
-    selectVehicle(vehicleParam);
+    // Try direct vehicleId match first, then search carNumbers
+    const direct = allVehicles.find(v => v.vehicleId === vehicleParam);
+    if (direct) {
+      selectVehicle(direct.vehicleId);
+    } else {
+      const byCarNum = allVehicles.find(v =>
+        v.carNumbers && v.carNumbers.some(c => c === vehicleParam));
+      if (byCarNum) selectVehicle(byCarNum.vehicleId);
+    }
   }
 });
 

@@ -8,7 +8,7 @@ const VDASH_CONFIG = {
   // ── 運行模式 ──
   // 'mock' = 前端模擬資料（不需 Maximo）
   // 'api'  = 連接 Maximo REST API
-  mode: 'mock',
+  mode: 'api',
 
   // ── API 連線設定 ──
   api: {

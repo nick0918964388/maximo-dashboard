@@ -1077,7 +1077,7 @@ body::after {
   <div class="bottom-row">
     <!-- Maintenance -->
     <div class="panel delay-4">
-      <div class="section-title">近期保養紀錄</div>
+      <div class="section-title" id="maintTitle">近期保養紀錄</div>
       <div class="table-wrapper">
         <table class="data-table" id="maintTable">
           <thead>
@@ -1090,7 +1090,7 @@ body::after {
 
     <!-- Faults -->
     <div class="panel delay-5">
-      <div class="section-title">近期故障紀錄</div>
+      <div class="section-title" id="faultTitle">近期故障紀錄</div>
       <div class="table-wrapper">
         <table class="data-table" id="faultTable">
           <thead>
@@ -1153,11 +1153,11 @@ body::after {
 </div>
 
 <!-- ═══ API Layer ═══ -->
-<script src="js/config.js?v=20260312b"></script>
-<script src="js/shared.js?v=20260312b"></script>
-<script src="js/api-client.js?v=20260312b"></script>
-<script src="js/mock-data.js?v=20260312b"></script>
-<script src="js/data-service.js?v=20260312b"></script>
+<script src="js/config.js?v=20260312c"></script>
+<script src="js/shared.js?v=20260312c"></script>
+<script src="js/api-client.js?v=20260312c"></script>
+<script src="js/mock-data.js?v=20260312c"></script>
+<script src="js/data-service.js?v=20260312c"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -1411,6 +1411,7 @@ function renderHistory(operations) {
 // RENDER: MAINTENANCE HISTORY (from API)
 // ═══════════════════════════════════════════
 function renderMaintenance(items) {
+  document.getElementById('maintTitle').innerHTML = `近期保養紀錄 <span style="font-size:0.85em;color:var(--text-secondary);">(${items.length})</span>`;
   const typeClassMap = {
     'PM': 'maint-regular',
     'CM': 'maint-wheel',
@@ -1439,6 +1440,7 @@ function renderMaintenance(items) {
 // RENDER: FAULT HISTORY (from API)
 // ═══════════════════════════════════════════
 function renderFaults(items) {
+  document.getElementById('faultTitle').innerHTML = `近期故障紀錄 <span style="font-size:0.85em;color:var(--text-secondary);">(${items.length})</span>`;
   const sevClassMap = {
     'high': 'sev-high',
     'medium': 'sev-medium',

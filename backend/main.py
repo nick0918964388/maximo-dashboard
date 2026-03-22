@@ -100,6 +100,11 @@ def _now_iso() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
+def _normalize_date(date_str: str) -> str:
+    """Convert date from slash format (2026/03/14) to dash format (2026-03-14)."""
+    return date_str.replace("/", "-") if date_str else date_str
+
+
 def get_vehicle_type(eq3: Optional[str]) -> Optional[str]:
     """Map eq3 vehicle class code to frontend e/emu/dr category.
 
@@ -326,6 +331,7 @@ async def get_fleet_summary(
     date: str = Query(..., description="Date in YYYY-MM-DD"),
 ):
     """Fleet summary for a specific depot and date."""
+    date = _normalize_date(date)
     pool = get_pool()
     try:
         async with pool.acquire() as conn:
@@ -456,13 +462,14 @@ async def get_daily_ops(
       - tra_prod_zz_trainstatement_zz_trainstatementline: car composition per trainsgrpid
       - tra_prod_mxasset: vehicle type lookup (eq3 → e/emu/dr)
     """
+    date = _normalize_date(date)
     pool = get_pool()
     try:
         async with pool.acquire() as conn:
             # 1) Fetch all statement rows for this depot + date
             rows = await conn.fetch(
                 """
-                SELECT trainsgrpid, planid, ma_planid,
+                SELECT trainsgrpid, planid, ma_planid, plangrpid,
                        trainsno, trainsseq, mileage,
                        trainsno_s_time, trainsno_e_time,
                        from_station, to_station,
@@ -470,7 +477,7 @@ async def get_daily_ops(
                 FROM   tra_prod_zz_trainstatement
                 WHERE  deptid = $1
                   AND  trainstatement_date LIKE $2 || '%'
-                ORDER  BY trainsgrpid, trainsseq::int
+                ORDER  BY trainsgrpid, plangrpid, trainsseq::int
                 """,
                 depot,
                 date,
@@ -533,6 +540,7 @@ async def get_daily_ops(
 
             train_entry = {
                 "trainsno": r["trainsno"] or "",
+                "plangrpid": r["plangrpid"] or "0",
                 "trainsseq": r["trainsseq"],
                 "startTime": _extract_time(r["trainsno_s_time"]),
                 "endTime": _extract_time(r["trainsno_e_time"]),
@@ -555,7 +563,14 @@ async def get_daily_ops(
             groups[grp_id]["trains"].append(train_entry)
             groups[grp_id]["totalMileage"] += train_entry["mileage"]
 
-        # 6) Transform to frontend vehicles[] format
+        # 6) Sort trains by plangrpid then trainsseq (keeps operation days grouped)
+        for op in groups.values():
+            op["trains"].sort(key=lambda t: (
+                int(t["plangrpid"]) if t["plangrpid"] else 0,
+                int(t["trainsseq"]) if t["trainsseq"] else 0,
+            ))
+
+        # 7) Transform to frontend vehicles[] format
         vehicles = []
         for op in groups.values():
             grp_id = op["trainsgrpid"]
@@ -601,6 +616,18 @@ async def get_daily_ops(
             if not vtype and display_id.isdigit():
                 vtype = "pp"
 
+            # Build trainDetails with station info
+            train_details = []
+            for t in op["trains"]:
+                train_details.append({
+                    "no": t["trainsno"],
+                    "from": t["fromStation"],
+                    "to": t["toStation"],
+                    "startTime": t["startTime"],
+                    "endTime": t["endTime"],
+                    "opDay": int(t["plangrpid"]) if t["plangrpid"] else 0,
+                })
+
             vehicle_entry = {
                 "id": display_id,
                 "type": vtype or "emu",
@@ -608,6 +635,7 @@ async def get_daily_ops(
                 "opCode": op["planid"],
                 "ma": op["maPlanid"],
                 "trains": train_numbers,
+                "trainDetails": train_details,
                 "start": start_time,
                 "end": end_time,
                 "mileage": op["totalMileage"],
@@ -1119,6 +1147,28 @@ URGENCY_MAP = {
     "C": {"severity": "low", "label": "一般故障"},
 }
 
+# Map vehicle group prefix → individual car prefixes
+_GROUP_CAR_PREFIXES = {
+    "TEMU": ["TED", "TEP", "TEM"],
+    "EMU":  ["EM", "EP", "ED", "ET", "EMC", "EMB", "EMA", "EME"],
+}
+
+
+def _expand_group_to_cars(vid: str) -> list[str]:
+    """Expand a vehicle group ID to its probable individual car IDs.
+
+    E.g. EMU502 → [EMU502, EM502, EP502, ED502, ET502, EMC502, ...]
+         TEMU2037 → [TEMU2037, TED2037, TEP2037, TEM2037]
+         E541 → [E541]  (no expansion needed)
+    """
+    import re
+    for prefix, car_prefixes in _GROUP_CAR_PREFIXES.items():
+        if vid.startswith(prefix):
+            num = vid[len(prefix):]
+            if num.isdigit():
+                return [vid] + [f"{cp}{num}" for cp in car_prefixes]
+    return [vid]
+
 SR_STATUS_MAP = {
     "立案": "OPEN",
     "處理中": "INPROG",
@@ -1199,6 +1249,94 @@ async def get_fault_history(
                 "generatedAt": _now_iso(),
             },
         }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# 8b. GET /api/v1/fault-summary-batch
+# ---------------------------------------------------------------------------
+
+@app.get("/api/v1/fault-summary-batch")
+async def get_fault_summary_batch(
+    vehicles: str = Query(..., description="Comma-separated vehicle IDs"),
+    days: int = Query(30, ge=0, le=365),
+):
+    """Batch fault summary for multiple vehicles.
+
+    Returns at most 5 recent faults per vehicle from tra_prod_mxsr,
+    querying by zz_eq24 directly and by zz_cargroup membership.
+    """
+    vehicle_list = [v.strip() for v in vehicles.split(",") if v.strip()]
+    if not vehicle_list:
+        raise HTTPException(status_code=400, detail="vehicles parameter must not be empty")
+    if len(vehicle_list) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 vehicles per batch request")
+
+    pool = get_pool()
+    result: dict = {vid: {"total": 0, "faults": []} for vid in vehicle_list}
+
+    try:
+        async with pool.acquire() as conn:
+            for vid in vehicle_list:
+                # Expand group ID to individual car IDs
+                car_ids = _expand_group_to_cars(vid)
+                rows = await conn.fetch(
+                    """
+                    SELECT sr.zz_entrydate, sr.description, sr.zz_urgency,
+                           sr.plusalocation, sr.plusaflightnum, sr.zz_im_time
+                    FROM   tra_prod_mxsr sr
+                    WHERE  sr.zz_eq24 = ANY($1::text[])
+                      AND  sr.zz_entrydate::date >= CURRENT_DATE - make_interval(days => $2)
+                    ORDER  BY sr.zz_entrydate DESC
+                    """,
+                    car_ids,
+                    days,
+                )
+
+                total = len(rows)
+                faults = []
+                for r in rows[:5]:
+                    urg = r["zz_urgency"] or "C"
+                    urg_info = URGENCY_MAP.get(urg, URGENCY_MAP["C"])
+
+                    entry_date = r["zz_entrydate"] or ""
+                    dt = entry_date.split("T")[0] if "T" in entry_date else entry_date
+
+                    # Use zz_im_time for fault report time (datetime field, extract HH:MM)
+                    im_time = r["zz_im_time"]
+                    entry_time = ""
+                    if im_time:
+                        im_str = str(im_time)
+                        if "T" in im_str:
+                            entry_time = im_str.split("T")[1][:5]
+                        elif " " in im_str:
+                            entry_time = im_str.split(" ")[1][:5]
+
+                    faults.append(
+                        {
+                            "date": dt,
+                            "time": entry_time,
+                            "description": (r["description"] or "").strip(),
+                            "severity": urg_info["severity"],
+                            "severityLabel": urg_info["label"],
+                            "location": r["plusalocation"] or "",
+                            "trainNo": r["plusaflightnum"] or "",
+                        }
+                    )
+
+                result[vid] = {"total": total, "faults": faults}
+
+        return {
+            "data": result,
+            "meta": {
+                "vehicleCount": len(vehicle_list),
+                "days": days,
+                "generatedAt": _now_iso(),
+            },
+        }
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -1302,6 +1440,7 @@ async def get_train_tracking(
     Query: tra_prod_zz_trainstatement grouped by trainsgrpid.
     Time fields use 1970-01-01 as date base — we extract HH:MM only.
     """
+    date = _normalize_date(date)
     pool = get_pool()
     try:
         async with pool.acquire() as conn:
@@ -1310,10 +1449,14 @@ async def get_train_tracking(
             params: list = [date]
             idx = 2
 
+            # vehicle filter: resolve display_id (e.g. "1427") to trainsgrpid
+            # We'll filter after fetching if needed; direct grpid match first
+            vehicle_filter_display = None
             if vehicle:
                 conditions.append(f"trainsgrpid = ${idx}")
                 params.append(vehicle)
                 idx += 1
+                vehicle_filter_display = vehicle  # keep for fallback search
 
             if depot:
                 conditions.append(f"deptid = ${idx}")
@@ -1335,14 +1478,46 @@ async def get_train_tracking(
                 *params,
             )
 
-            # Also fetch car lines for type detection
+            # If vehicle filter returned no rows, try searching by display ID
+            if not rows and vehicle_filter_display:
+                # Look up trainsgrpid by assetnum_simple (display ID)
+                grpid_rows = await conn.fetch(
+                    """
+                    SELECT DISTINCT l.trainsgrpid
+                    FROM   tra_prod_zz_trainstatement_zz_trainstatementline l
+                    JOIN   tra_prod_zz_trainstatement s
+                           ON s.trainsgrpid = l.trainsgrpid
+                          AND s.trainstatement_date LIKE $1 || '%'
+                    WHERE  l.assetnum_simple = $2
+                    """,
+                    date, vehicle_filter_display,
+                )
+                if grpid_rows:
+                    resolved_grpids = [r["trainsgrpid"] for r in grpid_rows]
+                    rows = await conn.fetch(
+                        f"""
+                        SELECT trainsgrpid, deptid, planid,
+                               trainsno, trainsseq, mileage,
+                               trainsno_s_time, trainsno_e_time,
+                               from_station, to_station
+                        FROM   tra_prod_zz_trainstatement
+                        WHERE  trainstatement_date LIKE $1 || '%'
+                          AND  trainsgrpid = ANY($2)
+                        ORDER  BY trainsgrpid, trainsseq::int
+                        """,
+                        date, resolved_grpids,
+                    )
+
+            # Also fetch car lines for type detection + display ID resolution
             grpids = list({r["trainsgrpid"] for r in rows if r["trainsgrpid"]})
 
             asset_type_map: dict[str, Optional[str]] = {}
+            grp_display_map: dict[str, str] = {}  # grpid → display_id
             if grpids:
                 line_rows = await conn.fetch(
                     """
                     SELECT DISTINCT l.trainsgrpid, l.assetnum,
+                           l.assetnum_simple,
                            COALESCE(g.eq3, a.eq3) AS resolved_eq3
                     FROM   tra_prod_zz_trainstatement_zz_trainstatementline l
                     LEFT JOIN tra_prod_mxasset a ON a.assetnum = l.assetnum
@@ -1353,13 +1528,27 @@ async def get_train_tracking(
                     """,
                     grpids,
                 )
-                # Map grpid → vehicle type (first resolved type wins)
+                # Map grpid → vehicle type, display ID, and all car numbers
                 grp_type_map: dict[str, Optional[str]] = {}
+                grp_cars_map: dict[str, list[str]] = {}  # grpid → all car numbers
                 for lr in line_rows:
                     gid = lr["trainsgrpid"]
                     if gid not in grp_type_map or not grp_type_map[gid]:
                         eq3 = lr["resolved_eq3"] or ""
                         grp_type_map[gid] = get_vehicle_type(eq3)
+                    # Resolve display ID from assetnum_simple or assetnum
+                    if gid not in grp_display_map or grp_display_map[gid] == gid:
+                        simple = lr["assetnum_simple"] or ""
+                        if simple:
+                            grp_display_map[gid] = simple
+                        elif lr["assetnum"] and grp_display_map.get(gid, gid) == gid:
+                            grp_display_map[gid] = lr["assetnum"]
+                    # Collect all car numbers for search
+                    simple = lr["assetnum_simple"] or ""
+                    if simple:
+                        grp_cars_map.setdefault(gid, [])
+                        if simple not in grp_cars_map[gid]:
+                            grp_cars_map[gid].append(simple)
                 asset_type_map = grp_type_map
 
         # Group by trainsgrpid
@@ -1380,12 +1569,19 @@ async def get_train_tracking(
             }
 
             if grp_id not in groups:
+                display_id = grp_display_map.get(grp_id, grp_id)
+                vtype = asset_type_map.get(grp_id)
+                # Fallback: numeric-only display IDs are PP客車
+                if not vtype and display_id.isdigit():
+                    vtype = "pp"
+                car_numbers = grp_cars_map.get(grp_id, [])
                 groups[grp_id] = {
-                    "vehicleId": grp_id,
+                    "vehicleId": display_id,
                     "depot": DEPOT_NAMES.get(r["deptid"] or "", r["deptid"] or ""),
                     "depotCode": r["deptid"] or "",
                     "planId": r["planid"] or "",
-                    "type": asset_type_map.get(grp_id) or "emu",
+                    "type": vtype or "emu",
+                    "carNumbers": car_numbers,
                     "legs": [],
                     "totalMileage": 0,
                 }
@@ -1393,9 +1589,10 @@ async def get_train_tracking(
             groups[grp_id]["legs"].append(leg)
             groups[grp_id]["totalMileage"] += leg["mileage"]
 
-        # Round total mileage
+        # Sort legs by seq then departTime within each group, then round total mileage
         vehicles = list(groups.values())
         for v in vehicles:
+            v["legs"].sort(key=lambda l: (l["seq"], l["departTime"] or ""))
             v["totalMileage"] = round(v["totalMileage"], 1)
 
         return {

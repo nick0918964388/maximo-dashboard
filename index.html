@@ -153,6 +153,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Font size presets via zoom */
+html.font-sm body { zoom: 0.9; }
+html.font-md body { zoom: 1.0; }
+html.font-lg body { zoom: 1.15; }
+
 /* ═══════════════════════════════════════════
    BACKGROUND ATMOSPHERE
    ═══════════════════════════════════════════ */
@@ -385,7 +390,7 @@ body::after {
    ═══════════════════════════════════════════ */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -405,9 +410,10 @@ body::after {
 }
 
 .summary-card:nth-child(1) { animation-delay: 0.1s; }
-.summary-card:nth-child(2) { animation-delay: 0.2s; }
-.summary-card:nth-child(3) { animation-delay: 0.3s; }
-.summary-card:nth-child(4) { animation-delay: 0.4s; }
+.summary-card:nth-child(2) { animation-delay: 0.15s; }
+.summary-card:nth-child(3) { animation-delay: 0.2s; }
+.summary-card:nth-child(4) { animation-delay: 0.3s; }
+.summary-card:nth-child(5) { animation-delay: 0.4s; }
 
 @keyframes card-in {
   to { opacity: 1; transform: translateY(0); }
@@ -789,6 +795,36 @@ body::after {
   margin-bottom: 18px;
 }
 .vehicles-section-header .section-title { margin-bottom: 0; }
+.vehicle-search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.search-mode-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 2px;
+  backdrop-filter: blur(12px);
+}
+.search-mode-tab {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.search-mode-tab:hover { color: var(--text-secondary); }
+.search-mode-tab.active {
+  background: var(--accent-copper);
+  color: #fff;
+}
 .vehicle-search {
   display: flex;
   align-items: center;
@@ -811,7 +847,7 @@ body::after {
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 13px;
-  width: 140px;
+  width: 160px;
 }
 .vehicle-search input::placeholder { color: var(--text-tertiary); }
 .vehicle-search-clear {
@@ -831,6 +867,253 @@ body::after {
   font-family: var(--font-mono);
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* ═══ ANOMALY FILTER ═══ */
+.anomaly-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.anomaly-filter:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.anomaly-filter:has(input:checked) {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.anomaly-filter input { display: none; }
+
+.anomaly-filter-icon { font-size: 13px; }
+.anomaly-filter-label { font-weight: 500; }
+
+.anomaly-filter-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #f87171;
+  min-width: 14px;
+  text-align: center;
+}
+
+.anomaly-filter-count:empty { display: none; }
+
+.fault-filter-btn:hover {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+.fault-filter-btn:has(input:checked) {
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #f59e0b !important;
+}
+.fault-filter-btn .anomaly-filter-count {
+  color: #f59e0b;
+}
+
+/* ═══ STATUS GROUP TOGGLE ═══ */
+.status-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  white-space: nowrap;
+  user-select: none;
+  font-family: inherit;
+}
+.status-group-btn:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.08);
+}
+.status-group-btn.active {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+}
+.status-group-icon { font-size: 13px; }
+.status-group-label { font-weight: 500; }
+.status-group-btn.loading .status-group-icon {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-group-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.grid-loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 0;
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.grid-loading-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border-glass);
+  border-top-color: var(--accent-copper);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Status group headers (collapsible) */
+.status-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  grid-column: 1 / -1;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  margin-top: 4px;
+}
+.status-group-header:first-child { margin-top: 0; }
+.status-group-header:hover { background: rgba(255,255,255,0.03); }
+.status-group-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.status-group-dot.running { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+.status-group-dot.not-started { background: #f59e0b; }
+.status-group-dot.completed { background: #94a3b8; }
+.status-group-dot.maintenance { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+.status-group-label-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.status-group-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.status-group-arrow {
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.25s;
+  margin-left: 2px;
+}
+.status-group-header.collapsed .status-group-arrow { transform: rotate(-90deg); }
+.status-group-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-glass);
+}
+/* Collapsible content wrapper */
+.status-group-content {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  overflow: hidden;
+  transition: grid-template-rows 0.3s;
+}
+.status-group-content.collapsed {
+  display: none;
+}
+/* Type sub-group headers inside status groups */
+.status-type-subheader {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 24px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.status-type-subheader:hover { background: rgba(255,255,255,0.03); }
+.status-type-subdot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.status-type-sublabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.status-type-subcount {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.status-type-subarrow {
+  font-size: 9px;
+  color: var(--text-muted);
+  transition: transform 0.25s;
+  margin-left: 2px;
+}
+.status-type-subheader.collapsed .status-type-subarrow { transform: rotate(-90deg); }
+.status-type-subline {
+  flex: 1;
+  height: 1px;
+  background: var(--border-glass);
+  opacity: 0.5;
+}
+.status-type-subcontent {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  padding-left: 24px;
+}
+.status-type-subcontent.collapsed {
+  display: none;
+}
+
+/* ═══ ANOMALY CARD FLASH ═══ */
+@keyframes anomaly-pulse {
+  0%, 100% { outline-color: rgba(239, 68, 68, 0.25); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { outline-color: rgba(239, 68, 68, 0.85); box-shadow: 0 0 16px 2px rgba(239, 68, 68, 0.2); }
+}
+
+.vehicle-card.anomaly {
+  outline: 2px solid rgba(239, 68, 68, 0.4);
+  outline-offset: -1px;
+  animation: anomaly-pulse 2s ease-in-out infinite, card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  position: relative;
+}
+
+/* Anomaly tooltip is rendered globally via JS on hover */
+#anomalyTooltipGlobal {
+  display: none;
+  position: fixed;
+  background: rgba(239, 68, 68, 0.92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .vehicles-grid {
@@ -893,7 +1176,92 @@ body::after {
   font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+/* Fault alert indicator (today's fault - yellow) */
+.fault-alert {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+  animation: fault-pulse 2s ease-in-out infinite;
+}
+@keyframes fault-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+}
+.fault-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 99999;
+  min-width: 280px;
+  max-width: 380px;
+  background: var(--bg-card, rgba(14, 22, 38, 0.95));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  backdrop-filter: blur(16px);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-primary, #e8edf5);
+  text-align: left;
+  pointer-events: none;
+}
+.fault-tooltip-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f59e0b;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  padding-bottom: 6px;
+}
+.fault-tooltip-item {
+  display: flex;
+  gap: 4px;
+  padding: 6px 0;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fault-tooltip-item:last-child { border-bottom: none; }
+.fault-tooltip-date {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary, #7a8ba8);
+}
+.fault-tooltip-desc {
+  flex: 1;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.fault-tooltip-loc {
+  font-size: 11px;
+  color: #60a5fa;
+  margin-top: 2px;
+}
+.fault-tooltip-sev {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.fault-tooltip-sev.high { background: rgba(239,68,68,0.2); color: #ef4444; }
+.fault-tooltip-sev.medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
+.fault-tooltip-sev.low { background: rgba(148,163,184,0.2); color: #94a3b8; }
 
 .vehicle-card-sub {
   font-size: 12px;
@@ -904,6 +1272,7 @@ body::after {
 .vehicle-card-badges {
   display: flex;
   gap: 6px;
+  position: relative;
 }
 
 .v-badge {
@@ -914,6 +1283,22 @@ body::after {
   font-weight: 600;
 }
 
+/* A/D+1 badges hidden by default, shown as tooltip on card hover */
+.v-badge.ctrl-a, .v-badge.ctrl-b, .v-badge.ctrl-c, .v-badge.days {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+.vehicle-card:hover .v-badge.ctrl-a,
+.vehicle-card:hover .v-badge.ctrl-b,
+.vehicle-card:hover .v-badge.ctrl-c,
+.vehicle-card:hover .v-badge.days {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .v-badge.ctrl-a { background: var(--color-e-bg); color: var(--color-e); border: 1px solid var(--color-e-border); }
 .v-badge.ctrl-b { background: var(--color-dr-bg); color: var(--color-dr); border: 1px solid var(--color-dr-border); }
 .v-badge.ctrl-c { background: var(--color-emu-bg); color: var(--color-emu); border: 1px solid var(--color-emu-border); }
@@ -922,6 +1307,18 @@ body::after {
   background: var(--accent-copper-dim);
   color: var(--accent-copper);
   border: 1px solid rgba(232, 168, 73, 0.2);
+}
+
+/* ═══ TODAY FAULT CARD FLASH (yellow) ═══ */
+@keyframes today-fault-pulse {
+  0%, 100% { outline-color: rgba(245, 158, 11, 0.25); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50% { outline-color: rgba(245, 158, 11, 0.85); box-shadow: 0 0 16px 2px rgba(245, 158, 11, 0.25); }
+}
+.vehicle-card.today-fault {
+  outline: 2px solid rgba(245, 158, 11, 0.4);
+  outline-offset: -1px;
+  animation: today-fault-pulse 2s ease-in-out infinite, card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  position: relative;
 }
 
 /* Route Timeline */
@@ -1003,6 +1400,28 @@ body::after {
 .stop-label.first, .stop-label.last {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+/* Current position indicator (red dot on route) */
+.route-position-dot {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6), 0 0 16px rgba(239, 68, 68, 0.3);
+  transition: left 0.5s ease;
+}
+.route-position-dot.running {
+  animation: pulse-red 1.5s ease-in-out infinite;
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.6), 0 0 16px rgba(239, 68, 68, 0.3); transform: translate(-50%, -50%) scale(1); }
+  50% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.8), 0 0 24px rgba(239, 68, 68, 0.5); transform: translate(-50%, -50%) scale(1.2); }
 }
 
 /* Card footer */
@@ -1246,6 +1665,12 @@ body::after {
   transform: scaleY(1.3);
   z-index: 2;
 }
+.timeline-bar-segment {
+  font-size: 9px;
+  border-radius: 2px;
+}
+.timeline-bar-segment:first-child { border-radius: 4px 2px 2px 4px; }
+.timeline-bar-segment:last-child { border-radius: 2px 4px 4px 2px; border-right: none !important; }
 
 .timeline-bar.type-e { background: linear-gradient(90deg, var(--color-e), rgba(74, 144, 217, 0.7)); }
 .timeline-bar.type-emu { background: linear-gradient(90deg, var(--color-emu), rgba(45, 212, 160, 0.7)); }
@@ -1539,6 +1964,52 @@ body::after {
   white-space: nowrap;
 }
 
+/* ═══ FONT SIZE TOGGLE ═══ */
+.font-size-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+}
+.font-size-toggle .font-size-label {
+  padding: 8px 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  border-right: 1px solid var(--border-glass);
+  white-space: nowrap;
+}
+.font-size-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+.font-size-btn:not(:last-child) {
+  border-right: 1px solid var(--border-glass);
+}
+.font-size-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+}
+.font-size-btn.active {
+  color: var(--accent-copper);
+  background: var(--accent-copper-dim);
+}
+.font-size-btn[data-size="sm"] { font-size: 11px; }
+.font-size-btn[data-size="md"] { font-size: 13px; }
+.font-size-btn[data-size="lg"] { font-size: 15px; }
+
 /* ═══════════════════════════════════════════
    CURRENT TIME INDICATOR (single line across entire timeline)
    ═══════════════════════════════════════════ */
@@ -1707,7 +2178,18 @@ body::after {
 }
 
 .vehicle-card-detail.open {
-  max-height: 400px;
+  max-height: none;
+}
+
+.vehicle-card-detail.open::-webkit-scrollbar {
+  width: 4px;
+}
+.vehicle-card-detail.open::-webkit-scrollbar-track {
+  background: transparent;
+}
+.vehicle-card-detail.open::-webkit-scrollbar-thumb {
+  background: var(--border-glass);
+  border-radius: 2px;
 }
 
 .vehicle-detail-table {
@@ -1719,7 +2201,7 @@ body::after {
 
 .detail-row {
   display: grid;
-  grid-template-columns: 32px 80px 1fr 1fr 60px;
+  grid-template-columns: 32px 80px 1fr 1fr minmax(90px, auto) 60px;
   gap: 8px;
   align-items: center;
   padding: 6px 10px;
@@ -1753,6 +2235,27 @@ body::after {
   font-size: 12px;
 }
 
+.detail-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-copper);
+  padding: 6px 10px 2px;
+  border-top: 1px solid var(--border-glass);
+  margin-top: 4px;
+}
+
+.detail-group-label:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+
+.detail-row-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .detail-row-km {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1762,7 +2265,7 @@ body::after {
 
 .detail-header {
   display: grid;
-  grid-template-columns: 32px 80px 1fr 1fr 60px;
+  grid-template-columns: 32px 80px 1fr 1fr minmax(90px, auto) 60px;
   gap: 8px;
   padding: 4px 10px 8px;
   font-size: 11px;
@@ -2053,6 +2556,12 @@ html.layout-superwide .ops-panel { min-width: 0; }
         <button class="layout-btn" data-layout="ultrawide">21:9</button>
         <button class="layout-btn" data-layout="superwide">超寬</button>
       </div>
+      <div class="font-size-toggle" id="fontSizeToggle" title="字體大小">
+        <span class="font-size-label">字</span>
+        <button class="font-size-btn" data-size="sm">小</button>
+        <button class="font-size-btn" data-size="md">中</button>
+        <button class="font-size-btn active" data-size="lg">大</button>
+      </div>
       <button class="theme-toggle" id="themeToggle" title="切換深淺色主題">
         <div class="theme-toggle-track">
           <div class="theme-toggle-thumb" id="themeThumb">🌙</div>
@@ -2088,6 +2597,12 @@ html.layout-superwide .ops-panel { min-width: 0; }
     <div class="summary-card is-loading">
       <div class="summary-icon vehicles">🚆</div>
       <div class="summary-label">投入編組數</div>
+      <div class="summary-value"><span class="count-up" data-target="0">—</span><span class="unit">組</span></div>
+      <div class="summary-change">&nbsp;</div>
+    </div>
+    <div class="summary-card is-loading">
+      <div class="summary-icon" style="background: rgba(34, 197, 94, 0.1);">🅿️</div>
+      <div class="summary-label">預備車</div>
       <div class="summary-value"><span class="count-up" data-target="0">—</span><span class="unit">組</span></div>
       <div class="summary-change">&nbsp;</div>
     </div>
@@ -2163,11 +2678,35 @@ html.layout-superwide .ops-panel { min-width: 0; }
   <div class="vehicles-section">
     <div class="vehicles-section-header">
       <div class="section-title">編組運用明細</div>
-      <div class="vehicle-search">
-        <span class="vehicle-search-icon">🔍</span>
-        <input type="text" id="vehicleSearchInput" placeholder="搜尋車號..." />
-        <button class="vehicle-search-clear" id="vehicleSearchClear" title="清除">&times;</button>
-        <span class="vehicle-search-count" id="vehicleSearchCount"></span>
+      <div class="vehicle-search-wrapper">
+        <div class="search-mode-tabs" id="searchModeTabs">
+          <button class="search-mode-tab active" data-mode="vehicle">車號</button>
+          <button class="search-mode-tab" data-mode="opcode">運用號</button>
+          <button class="search-mode-tab" data-mode="train">車次</button>
+          <button class="search-mode-tab" data-mode="station">車站</button>
+        </div>
+        <div class="vehicle-search">
+          <span class="vehicle-search-icon">🔍</span>
+          <input type="text" id="vehicleSearchInput" placeholder="搜尋車號..." />
+          <button class="vehicle-search-clear" id="vehicleSearchClear" title="清除">&times;</button>
+          <span class="vehicle-search-count" id="vehicleSearchCount"></span>
+        </div>
+        <label class="anomaly-filter" id="anomalyFilter" title="篩選運用日異常的編組">
+          <input type="checkbox" id="anomalyCheckbox" />
+          <span class="anomaly-filter-icon">⚠</span>
+          <span class="anomaly-filter-label">異常</span>
+          <span class="anomaly-filter-count" id="anomalyCount"></span>
+        </label>
+        <label class="anomaly-filter fault-filter-btn" id="faultFilterBtn" title="篩選本日有故障通報的編組" style="display:none">
+          <input type="checkbox" id="faultCheckbox" />
+          <span class="anomaly-filter-icon">🔧</span>
+          <span class="anomaly-filter-label">故障通報</span>
+          <span class="anomaly-filter-count" id="faultCount"></span>
+        </label>
+        <button class="status-group-btn" id="statusGroupBtn" title="切換依照行駛狀態分組顯示">
+          <span class="status-group-icon">📊</span>
+          <span class="status-group-label">依照行駛狀態</span>
+        </button>
       </div>
     </div>
     <div class="vehicles-grid" id="vehiclesGrid"></div>
@@ -2224,11 +2763,11 @@ html.layout-superwide .ops-panel { min-width: 0; }
 <div class="tooltip" id="tooltip"></div>
 
 <!-- ═══ API Layer ═══ -->
-<script src="js/config.js?v=20260312b"></script>
-<script src="js/shared.js?v=20260312b"></script>
-<script src="js/api-client.js?v=20260312b"></script>
-<script src="js/mock-data.js?v=20260312b"></script>
-<script src="js/data-service.js?v=20260312b"></script>
+<script src="js/config.js?v=20260312c"></script>
+<script src="js/shared.js?v=20260312c"></script>
+<script src="js/api-client.js?v=20260312c"></script>
+<script src="js/mock-data.js?v=20260312c"></script>
+<script src="js/data-service.js?v=20260312c"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -2239,9 +2778,16 @@ let currentDepot = 'MGY00';
 let currentDate = getTodaySlash();
 let currentFilter = 'all';
 let vehicleSearchQuery = '';
+let searchMode = 'vehicle'; // 'vehicle' | 'opcode' | 'train' | 'station'
 let donutChart = null;
 let cachedVehicles = [];
 let cachedFleetSummary = null;
+let cachedFaultSummary = {}; // vehicleId → { total, faults[] }
+let filterAnomalyOnly = false; // checkbox: show only anomaly vehicles
+let filterFaultOnly = false;   // checkbox: show only today-fault vehicles
+let viewByStatus = false; // toggle: group by status instead of type
+const statusGroupCollapsed = {}; // { 'running': true/false, ... }
+const statusTypeCollapsed = {}; // { 'running-emu': true/false, ... }
 
 // ═══════════════════════════════════════════
 // UTILITIES (index-specific)
@@ -2252,14 +2798,63 @@ function timeToMinutes(t) {
   return h * 60 + m;
 }
 
+// Detect multi-plangrpid anomaly: vehicle has trains from 2+ operation days
+// whose time ranges overlap (cannot be sequenced without conflict)
+function hasOpDayAnomaly(v) {
+  if (!v.trainDetails || v.trainDetails.length === 0) return false;
+  // Group by opDay, find each group's earliest start and latest end
+  const dayRanges = {};
+  v.trainDetails.forEach(td => {
+    const day = td.opDay != null ? td.opDay : 0;
+    const s = td.startTime ? timeToMinutes(td.startTime) : null;
+    const e = td.endTime ? timeToMinutes(td.endTime) : null;
+    if (!dayRanges[day]) dayRanges[day] = { start: null, end: null };
+    if (s !== null && (dayRanges[day].start === null || s < dayRanges[day].start)) dayRanges[day].start = s;
+    if (e !== null && (dayRanges[day].end === null || e > dayRanges[day].end)) dayRanges[day].end = e;
+  });
+  const ranges = Object.values(dayRanges).filter(r => r.start !== null && r.end !== null);
+  if (ranges.length <= 1) return false;
+  // Sort by start time, then check if any ranges overlap
+  ranges.sort((a, b) => a.start - b.start);
+  for (let i = 1; i < ranges.length; i++) {
+    if (ranges[i].start < ranges[i - 1].end) return true; // overlap = anomaly
+  }
+  return false;
+}
+
 function filterData(data) {
   let filtered = data;
   if (currentFilter !== 'all') {
     filtered = filtered.filter(v => (v.type || getType(v.id)) === currentFilter);
   }
+  if (filterAnomalyOnly) {
+    filtered = filtered.filter(v => hasOpDayAnomaly(v));
+  }
+  if (filterFaultOnly) {
+    filtered = filtered.filter(v => hasTodayFault(v));
+  }
   if (vehicleSearchQuery) {
     const q = vehicleSearchQuery.toLowerCase();
-    filtered = filtered.filter(v => v.id.toLowerCase().includes(q));
+    if (searchMode === 'vehicle') {
+      filtered = filtered.filter(v => v.id.toLowerCase().includes(q));
+    } else if (searchMode === 'opcode') {
+      filtered = filtered.filter(v => v.opCode && v.opCode.toLowerCase().includes(q));
+    } else if (searchMode === 'train') {
+      filtered = filtered.filter(v =>
+        v.trains && v.trains.some(t => t.toLowerCase().includes(q)));
+    } else if (searchMode === 'station') {
+      filtered = filtered.filter(v => {
+        if (v.trainDetails) {
+          return v.trainDetails.some(td =>
+            (td.from && td.from.includes(q)) || (td.to && td.to.includes(q)));
+        }
+        // Fallback: use trainStations lookup
+        return v.trains && v.trains.some(t => {
+          const s = trainStations[t];
+          return s && ((s.from && s.from.includes(q)) || (s.to && s.to.includes(q)));
+        });
+      });
+    }
   }
   return filtered;
 }
@@ -2278,6 +2873,56 @@ function getVehicleStatus(v) {
   if (nowMin < startMin) return 'not-started';
   if (nowMin > endMin) return 'completed';
   return 'running';
+}
+
+// Calculate current position percentage on route track (0~100)
+function getRoutePosition(v, status) {
+  const n = v.trains.length;
+  if (n === 0) return -1; // no trains, hide dot
+
+  if (status === 'not-started') return 0;
+  if (status === 'completed') return 100;
+
+  // single train and running: show in middle
+  if (n === 1) return 50;
+
+  // status === 'running': find current train based on time
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const details = v.trainDetails || [];
+
+  // Find which train is currently active or which gap we're in
+  for (let i = 0; i < n; i++) {
+    const td = details[i] || {};
+    const s = td.startTime ? timeToMinutes(td.startTime) : null;
+    const e = td.endTime ? timeToMinutes(td.endTime) : null;
+
+    // Currently within this train's time range
+    if (s != null && e != null && nowMin >= s && nowMin <= e) {
+      return (i / (n - 1)) * 100;
+    }
+
+    // Between this train and the next (gap)
+    if (i < n - 1) {
+      const nextTd = details[i + 1] || {};
+      const nextS = nextTd.startTime ? timeToMinutes(nextTd.startTime) : null;
+      if (e != null && nextS != null && nowMin > e && nowMin < nextS) {
+        // Interpolate between train i and i+1
+        const gapProgress = (nowMin - e) / (nextS - e);
+        const posI = (i / (n - 1)) * 100;
+        const posNext = ((i + 1) / (n - 1)) * 100;
+        return posI + gapProgress * (posNext - posI);
+      }
+    }
+  }
+
+  // Fallback: if we can't determine exact position, use overall progress
+  const startMin = timeToMinutes(v.start);
+  const endMin = timeToMinutes(v.end);
+  if (startMin != null && endMin != null && endMin > startMin) {
+    return Math.min(100, Math.max(0, ((nowMin - startMin) / (endMin - startMin)) * 100));
+  }
+  return 50; // middle as last resort
 }
 
 // ═══════════════════════════════════════════
@@ -2314,14 +2959,18 @@ function updateSummary(data) {
   const totalMileage = filtered.reduce((s, v) => s + v.mileage, 0);
   const totalTrains = filtered.reduce((s, v) => s + v.trains.length, 0);
 
+  // 預備車：當下時間沒有在運行的車輛
+  const reserveCount = filtered.filter(v => getVehicleStatus(v) !== 'running').length;
+
   // 近7日平均里程：從 fleet-summary API 取得
   const avg7 = cachedFleetSummary?.summary?.avg7DayMileage || 0;
 
   const counters = document.querySelectorAll('.count-up');
   counters[0].dataset.target = total;
-  counters[1].dataset.target = totalMileage.toFixed(1);
-  counters[2].dataset.target = totalTrains;
-  counters[3].dataset.target = avg7.toFixed ? avg7.toFixed(1) : avg7;
+  counters[1].dataset.target = reserveCount;
+  counters[2].dataset.target = totalMileage.toFixed(1);
+  counters[3].dataset.target = totalTrains;
+  counters[4].dataset.target = avg7.toFixed ? avg7.toFixed(1) : avg7;
 
   animateCounters();
 }
@@ -2420,6 +3069,13 @@ function renderMileage(data) {
       const clearBtn = document.getElementById('vehicleSearchClear');
       const countEl = document.getElementById('vehicleSearchCount');
 
+      // Switch to vehicle mode when clicking mileage item
+      if (searchMode !== 'vehicle') {
+        searchMode = 'vehicle';
+        const tabs = document.getElementById('searchModeTabs');
+        tabs.querySelectorAll('.search-mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === 'vehicle'));
+        input.placeholder = '搜尋車號...';
+      }
       // Toggle: click same vehicle again to clear
       if (vehicleSearchQuery === vid) {
         vehicleSearchQuery = '';
@@ -2459,130 +3115,306 @@ function renderMileage(data) {
 // ═══════════════════════════════════════════
 // VEHICLE CARDS
 // ═══════════════════════════════════════════
+function buildFaultBadge(v) {
+  const key = v.assetnum || v.id;
+  const fault = cachedFaultSummary[key];
+  if (!fault || fault.total === 0) return '';
+
+  let tooltipItems = fault.faults.map(f => {
+    const timeStr = f.time ? f.time : '';
+    const dateTime = timeStr ? `${f.date} ${timeStr}` : f.date;
+    const locInfo = f.location ? `<div class="fault-tooltip-loc">📍 ${f.location}${f.trainNo ? ' — 車次 ' + f.trainNo : ''}</div>` : (f.trainNo ? `<div class="fault-tooltip-loc">🚆 車次 ${f.trainNo}</div>` : '');
+    return `<div class="fault-tooltip-item">
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="fault-tooltip-date">${dateTime}</span>
+          <span class="fault-tooltip-sev ${f.severity}">${f.severityLabel}</span>
+        </div>
+        <span class="fault-tooltip-desc">${f.description || '—'}</span>
+        ${locInfo}
+      </div>
+    </div>`;
+  }).join('');
+
+  const moreText = fault.total > 5 ? `<div style="text-align:center;color:var(--text-muted);margin-top:4px;font-size:11px">⋯ 共 ${fault.total} 筆</div>` : '';
+
+  const tooltipHTML = `<div class="fault-tooltip-title">今日故障通報 (${fault.total} 筆)</div>${tooltipItems}${moreText}`;
+  return `<span class="fault-alert" data-fault-tooltip="${tooltipHTML.replace(/"/g, '&quot;')}" onclick="event.stopPropagation();event.preventDefault()">⚠</span>`;
+}
+
+function hasTodayFault(v) {
+  const key = v.assetnum || v.id;
+  const fault = cachedFaultSummary[key];
+  return fault && fault.total > 0;
+}
+
+function getExtendedStatus(v) {
+  // 檢修中: vehicles with today's fault
+  if (hasTodayFault(v)) return 'maintenance';
+  return getVehicleStatus(v);
+}
+
+function toggleStatusGroup(status) {
+  statusGroupCollapsed[status] = !statusGroupCollapsed[status];
+  const header = document.querySelector(`.status-group-header[onclick*="'${status}'"]`);
+  const content = document.getElementById('sg-' + status);
+  if (header) header.classList.toggle('collapsed', statusGroupCollapsed[status]);
+  if (content) content.classList.toggle('collapsed', statusGroupCollapsed[status]);
+}
+
+function toggleStatusType(status, type) {
+  const key = status + '-' + type;
+  statusTypeCollapsed[key] = !statusTypeCollapsed[key];
+  const header = document.querySelector(`.status-type-subheader[onclick*="'${status}','${type}'"]`);
+  const content = document.getElementById('st-' + status + '-' + type);
+  if (header) header.classList.toggle('collapsed', statusTypeCollapsed[key]);
+  if (content) content.classList.toggle('collapsed', statusTypeCollapsed[key]);
+}
+
 function renderVehicleCards(data) {
   const grid = document.getElementById('vehiclesGrid');
   const filtered = filterData(data);
 
-  // Group by type
-  const typeOrder = ['e', 'emu', 'dr', 'pp', 'ck'];
-  const groups = {};
-  filtered.forEach(v => {
-    const t = v.type || getType(v.id);
-    if (!groups[t]) groups[t] = [];
-    groups[t].push(v);
-  });
-
-  // 每組內排序：行駛中優先，再按車號排序
-  const statusPriority = { 'running': 0, 'not-started': 1, 'completed': 2 };
-  Object.keys(groups).forEach(t => {
-    groups[t].sort((a, b) => {
-      const sa = statusPriority[getVehicleStatus(a)] ?? 1;
-      const sb = statusPriority[getVehicleStatus(b)] ?? 1;
-      if (sa !== sb) return sa - sb;
-      return sortByVehicleId(a.id, b.id);
-    });
-  });
-
   let html = '';
   let cardIdx = 0;
 
-  typeOrder.forEach(type => {
-    if (!groups[type] || groups[type].length === 0) return;
+  if (viewByStatus) {
+    // ═══ STATUS GROUPING MODE ═══
+    const statusOrder = ['running', 'not-started', 'completed', 'maintenance'];
+    const statusLabels = {
+      'running': '行駛中',
+      'not-started': '等待出車中',
+      'completed': '已行駛完畢',
+      'maintenance': '檢修中'
+    };
+    const typeOrder = ['e', 'emu', 'dr', 'pp', 'ck'];
 
-    // Only show group headers when filter is 'all'
-    if (currentFilter === 'all') {
-      html += `
-        <div class="vehicle-group-header">
-          <div class="vehicle-group-dot ${type}"></div>
-          <div class="vehicle-group-label">${getTypeLabelFull(type)}</div>
-          <div class="vehicle-group-count">${groups[type].length} 組</div>
-          <div class="vehicle-group-line"></div>
-        </div>`;
-    }
-
-    groups[type].forEach(v => {
-      const ctrlClass = v.ctrl === 'A' ? 'ctrl-a' : v.ctrl === 'B' ? 'ctrl-b' : 'ctrl-c';
-      const daysLabel = `D+${v.days}`;
-      const status = getVehicleStatus(v);
-
-      const stopsHTML = v.trains.map((t, idx) => {
-        const isFirst = idx === 0;
-        const isLast = idx === v.trains.length - 1;
-        const dotClass = isFirst ? 'first' : isLast ? 'last' : '';
-        const labelClass = isFirst ? 'first' : isLast ? 'last' : '';
-        return `
-          <div class="route-stop">
-            <div class="stop-dot ${dotClass}"></div>
-            <div class="stop-label ${labelClass}">${t}</div>
-          </div>
-        `;
-      }).join('');
-
-      const detailRows = v.trains.map((t, idx) => {
-        const station = trainStations[t] || { from: '—', to: '—' };
-        const segKm = v.trains.length > 0 ? (v.mileage / v.trains.length).toFixed(1) : '—';
-        return `
-          <div class="detail-row">
-            <div class="detail-row-idx">${idx + 1}</div>
-            <div class="detail-row-train">${t}</div>
-            <div class="detail-row-from">${station.from}</div>
-            <div class="detail-row-to">${station.to}</div>
-            <div class="detail-row-km">${segKm}</div>
-          </div>`;
-      }).join('');
-
-      const cardId = 'card-' + v.id.replace(/\s/g, '') + '-' + cardIdx;
-
-      html += `
-        <div class="vehicle-card type-${v.type || getType(v.id)} status-${status}" style="animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${0.05 * cardIdx}s forwards;">
-          <div class="vehicle-card-header">
-            <div class="vehicle-card-id-group">
-              <div class="vehicle-type-indicator"></div>
-              <div>
-                <div class="vehicle-card-name"><a href="vehicle-history.html?id=${v.assetnum || v.id}" title="${v.id} 運用歷程">${v.id}</a></div>
-                <div class="vehicle-card-sub">${v.opCode} · ${v.ma} · ${getTypeLabel(v.type || getType(v.id))}</div>
-              </div>
-            </div>
-            <div class="vehicle-card-badges">
-              <a href="train-map.html?vehicle=${encodeURIComponent(v.id)}" class="vehicle-card-map-btn" title="在地圖上查看 ${v.id} 路線" onclick="event.stopPropagation()">&#x1f5fa;</a>
-              <div class="v-badge ${ctrlClass}">${v.ctrl}</div>
-              <div class="v-badge days">${daysLabel}</div>
-            </div>
-          </div>
-          <div class="vehicle-route">
-            <div class="route-track">
-              <div class="route-line"></div>
-              <div class="route-stops">${stopsHTML}</div>
-            </div>
-          </div>
-          <div class="vehicle-card-footer">
-            <div class="footer-stat">
-              <div class="footer-stat-label">起迄時間</div>
-              <div class="footer-stat-value">${v.start || '--:--'} → ${v.end || '--:--'}</div>
-            </div>
-            <div class="footer-stat">
-              <div class="footer-stat-label">車次數</div>
-              <div class="footer-stat-value">${v.trains.length}</div>
-            </div>
-            <div class="footer-mileage">${v.mileage.toFixed(1)}<span class="km"> km</span></div>
-          </div>
-          <div class="vehicle-card-detail" id="${cardId}">
-            <div class="vehicle-detail-table">
-              <div class="detail-header">
-                <div>#</div><div>車次</div><div>起站</div><div>訖站</div><div>里程</div>
-              </div>
-              ${detailRows}
-            </div>
-          </div>
-          <button class="vehicle-card-expand-btn" onclick="toggleCardDetail('${cardId}', this)">
-            <span>展開車次明細</span><span class="arrow">▼</span>
-          </button>
-        </div>`;
-      cardIdx++;
+    // Build nested structure: status → type → vehicles
+    const statusGroups = {};
+    filtered.forEach(v => {
+      const s = getExtendedStatus(v);
+      const t = v.type || getType(v.id);
+      if (!statusGroups[s]) statusGroups[s] = {};
+      if (!statusGroups[s][t]) statusGroups[s][t] = [];
+      statusGroups[s][t].push(v);
     });
-  });
+    // Sort each type sub-group by vehicle ID
+    Object.values(statusGroups).forEach(typeMap => {
+      Object.values(typeMap).forEach(arr => arr.sort((a, b) => sortByVehicleId(a.id, b.id)));
+    });
+
+    statusOrder.forEach(status => {
+      const typeMap = statusGroups[status];
+      if (!typeMap) return;
+      const totalCount = Object.values(typeMap).reduce((sum, arr) => sum + arr.length, 0);
+      if (totalCount === 0) return;
+      const sgId = 'sg-' + status;
+      const isCollapsed = statusGroupCollapsed[status];
+      html += `
+        <div class="status-group-header${isCollapsed ? ' collapsed' : ''}" onclick="toggleStatusGroup('${status}')">
+          <div class="status-group-arrow">▼</div>
+          <div class="status-group-dot ${status}"></div>
+          <div class="status-group-label-text">${statusLabels[status]}</div>
+          <div class="status-group-count">${totalCount} 輛</div>
+          <div class="status-group-line"></div>
+        </div>`;
+      html += `<div class="status-group-content${isCollapsed ? ' collapsed' : ''}" id="${sgId}">`;
+
+      // Type sub-groups within each status (always shown)
+      const typesPresent = typeOrder.filter(t => typeMap[t] && typeMap[t].length > 0);
+      typesPresent.forEach(type => {
+        const vehicles = typeMap[type];
+        const stId = 'st-' + status + '-' + type;
+        const subCollapsed = statusTypeCollapsed[status + '-' + type];
+        html += `
+          <div class="status-type-subheader${subCollapsed ? ' collapsed' : ''}" onclick="event.stopPropagation(); toggleStatusType('${status}','${type}')">
+            <div class="status-type-subarrow">▼</div>
+            <div class="status-type-subdot" style="background:var(--color-${type})"></div>
+            <div class="status-type-sublabel">${getTypeLabelFull(type)}</div>
+            <div class="status-type-subcount">${vehicles.length} 輛</div>
+            <div class="status-type-subline"></div>
+          </div>`;
+        html += `<div class="status-type-subcontent${subCollapsed ? ' collapsed' : ''}" id="${stId}">`;
+        vehicles.forEach(v => {
+          html += renderSingleCard(v, cardIdx++);
+        });
+        html += `</div>`;
+      });
+
+      html += `</div>`;
+    });
+  } else {
+    // ═══ TYPE GROUPING MODE (original) ═══
+    const typeOrder = ['e', 'emu', 'dr', 'pp', 'ck'];
+    const groups = {};
+    filtered.forEach(v => {
+      const t = v.type || getType(v.id);
+      if (!groups[t]) groups[t] = [];
+      groups[t].push(v);
+    });
+
+    // 每組內排序：行駛中優先，再按車號排序
+    const statusPriority = { 'running': 0, 'not-started': 1, 'completed': 2 };
+    Object.keys(groups).forEach(t => {
+      groups[t].sort((a, b) => {
+        const sa = statusPriority[getVehicleStatus(a)] ?? 1;
+        const sb = statusPriority[getVehicleStatus(b)] ?? 1;
+        if (sa !== sb) return sa - sb;
+        return sortByVehicleId(a.id, b.id);
+      });
+    });
+
+    typeOrder.forEach(type => {
+      if (!groups[type] || groups[type].length === 0) return;
+
+      // Only show group headers when filter is 'all'
+      if (currentFilter === 'all') {
+        html += `
+          <div class="vehicle-group-header">
+            <div class="vehicle-group-dot ${type}"></div>
+            <div class="vehicle-group-label">${getTypeLabelFull(type)}</div>
+            <div class="vehicle-group-count">${groups[type].length} 組</div>
+            <div class="vehicle-group-line"></div>
+          </div>`;
+      }
+
+      groups[type].forEach(v => {
+        html += renderSingleCard(v, cardIdx++);
+      });
+    });
+  }
 
   grid.innerHTML = html;
+}
+
+function renderSingleCard(v, cardIdx) {
+  const ctrlClass = v.ctrl === 'A' ? 'ctrl-a' : v.ctrl === 'B' ? 'ctrl-b' : 'ctrl-c';
+  const daysLabel = `D+${v.days}`;
+  const status = getVehicleStatus(v);
+
+  const stopsHTML = v.trains.map((t, idx) => {
+    const isFirst = idx === 0;
+    const isLast = idx === v.trains.length - 1;
+    const dotClass = isFirst ? 'first' : isLast ? 'last' : '';
+    const labelClass = isFirst ? 'first' : isLast ? 'last' : '';
+    return `
+      <div class="route-stop">
+        <div class="stop-dot ${dotClass}"></div>
+        <div class="stop-label ${labelClass}">${t}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Current position indicator on route
+  const routePos = getRoutePosition(v, status);
+  const positionTitle = (() => {
+    if (status === 'not-started') return '未出發';
+    const details = v.trainDetails || [];
+    if (status === 'completed') {
+      const last = details[details.length - 1];
+      return last && last.to ? `已完成 — 終到 ${last.to}` : '已完成';
+    }
+    // running: find current train
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    for (let i = 0; i < details.length; i++) {
+      const td = details[i];
+      const s = td.startTime ? timeToMinutes(td.startTime) : null;
+      const e = td.endTime ? timeToMinutes(td.endTime) : null;
+      if (s != null && e != null && nowMin >= s && nowMin <= e) {
+        return `行駛中 — ${v.trains[i]} ${td.from || ''}→${td.to || ''}`;
+      }
+    }
+    return '行駛中';
+  })();
+  const positionDotHTML = routePos >= 0
+    ? `<div class="route-position-dot ${status === 'running' ? 'running' : ''}" style="left: calc(16px + (100% - 32px) * ${routePos / 100})" title="${positionTitle}"></div>`
+    : '';
+
+  // Group detail rows by opDay (plangrpid)
+  const detailRows = (() => {
+    const dGroups = {};
+    v.trains.forEach((t, idx) => {
+      const td = (v.trainDetails && v.trainDetails[idx]) || {};
+      const day = td.opDay != null ? td.opDay : 0;
+      if (!dGroups[day]) dGroups[day] = [];
+      dGroups[day].push({ t, td, idx });
+    });
+    const dayKeys = Object.keys(dGroups).sort((a, b) => a - b);
+    const multiGroup = dayKeys.length > 1;
+    let h = '';
+    dayKeys.forEach(day => {
+      if (multiGroup) {
+        h += `<div class="detail-group-label">D${day}</div>`;
+      }
+      dGroups[day].forEach((item, seqIdx) => {
+        const station = (item.td.from && item.td.to) ? item.td : (trainStations[item.t] || { from: '—', to: '—' });
+        const segKm = v.trains.length > 0 ? (v.mileage / v.trains.length).toFixed(1) : '—';
+        const timeRange = (item.td.startTime && item.td.endTime) ? `${item.td.startTime}→${item.td.endTime}` : '—';
+        h += `
+          <div class="detail-row">
+            <div class="detail-row-idx">${seqIdx + 1}</div>
+            <div class="detail-row-train">${item.t}</div>
+            <div class="detail-row-from">${station.from}</div>
+            <div class="detail-row-to">${station.to}</div>
+            <div class="detail-row-time">${timeRange}</div>
+            <div class="detail-row-km">${segKm}</div>
+          </div>`;
+      });
+    });
+    return h;
+  })();
+
+  const cardId = 'card-' + v.id.replace(/\s/g, '') + '-' + cardIdx;
+  const isAnomaly = hasOpDayAnomaly(v);
+  const isTodayFault = hasTodayFault(v);
+
+  return `
+    <div class="vehicle-card type-${v.type || getType(v.id)} status-${status}${isAnomaly ? ' anomaly' : ''}${isTodayFault ? ' today-fault' : ''}" style="animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${0.05 * cardIdx}s forwards;">
+      <div class="vehicle-card-header">
+        <div class="vehicle-card-id-group">
+          <div class="vehicle-type-indicator"></div>
+          <div>
+            <div class="vehicle-card-name"><a href="vehicle-history.html?id=${v.assetnum || v.id}" title="${v.id} 運用歷程">${v.id}</a>${buildFaultBadge(v)}</div>
+            <div class="vehicle-card-sub">${v.opCode} · ${v.ma} · ${getTypeLabel(v.type || getType(v.id))}</div>
+          </div>
+        </div>
+        <div class="vehicle-card-badges">
+          <a href="train-map.html?vehicle=${encodeURIComponent(v.id)}" class="vehicle-card-map-btn" title="在地圖上查看 ${v.id} 路線" onclick="event.stopPropagation()">&#x1f5fa;</a>
+          <div class="v-badge ${ctrlClass}">${v.ctrl}</div>
+          <div class="v-badge days">${daysLabel}</div>
+        </div>
+      </div>
+      <div class="vehicle-route">
+        <div class="route-track">
+          <div class="route-line"></div>
+          ${positionDotHTML}
+          <div class="route-stops">${stopsHTML}</div>
+        </div>
+      </div>
+      <div class="vehicle-card-footer">
+        <div class="footer-stat">
+          <div class="footer-stat-label">起迄時間</div>
+          <div class="footer-stat-value">${v.start || '--:--'} → ${v.end || '--:--'}</div>
+        </div>
+        <div class="footer-stat">
+          <div class="footer-stat-label">車次數</div>
+          <div class="footer-stat-value">${v.trains.length}</div>
+        </div>
+        <div class="footer-mileage">${v.mileage.toFixed(1)}<span class="km"> km</span></div>
+      </div>
+      <div class="vehicle-card-detail" id="${cardId}">
+        <div class="vehicle-detail-table">
+          <div class="detail-header">
+            <div>#</div><div>車次</div><div>起站</div><div>訖站</div><div>起訖時間</div><div>里程</div>
+          </div>
+          ${detailRows}
+        </div>
+      </div>
+      <button class="vehicle-card-expand-btn" onclick="toggleCardDetail('${cardId}', this)">
+        <span>展開車次明細</span><span class="arrow">▼</span>
+      </button>
+    </div>`;
 }
 
 // ═══════════════════════════════════════════
@@ -2607,22 +3439,49 @@ function renderTimeline(data) {
 
   rows.innerHTML = filtered.map(v => {
     const type = v.type || getType(v.id);
-    const startMin = timeToMinutes(v.start);
-    const endMin = timeToMinutes(v.end);
     const totalMin = totalH * 60;
     const offsetMin = startH * 60;
+    const details = v.trainDetails || [];
+    const colorMap = {e:'#4a90d9',emu:'#2dd4a0',dr:'#f59e0b',pp:'#a78bfa',ck:'#f472b6'};
 
-    const left = Math.max(0, ((startMin - offsetMin) / totalMin) * 100);
-    const width = Math.max(2, ((endMin - startMin) / totalMin) * 100);
+    let barsHTML = '';
+    if (details.length > 0 && details.some(td => td.startTime && td.endTime)) {
+      // Split bar by individual train runs
+      const segColors = [
+        'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.0)'
+      ];
+      details.forEach((td, idx) => {
+        if (!td.startTime || !td.endTime) return;
+        const sMin = timeToMinutes(td.startTime);
+        const eMin = timeToMinutes(td.endTime);
+        const segLeft = Math.max(0, ((sMin - offsetMin) / totalMin) * 100);
+        const segWidth = Math.max(0.5, ((eMin - sMin) / totalMin) * 100);
+        const trainNo = v.trains[idx] || '';
+        const station = td.from && td.to ? `${td.from}→${td.to}` : '';
+        const title = `${trainNo} ${td.startTime}-${td.endTime} ${station}`;
+        const altBg = idx % 2 === 0 ? '' : 'opacity: 0.75;';
+        barsHTML += `<div class="timeline-bar type-${type} timeline-bar-segment" style="left: ${segLeft}%; width: ${segWidth}%; ${altBg} border-right: 1px solid rgba(0,0,0,0.3);"
+               title="${title}">
+            ${segWidth > 4 ? trainNo : ''}
+          </div>`;
+      });
+    } else {
+      // Fallback: single bar for entire op
+      const startMin = timeToMinutes(v.start);
+      const endMin = timeToMinutes(v.end);
+      const left = Math.max(0, ((startMin - offsetMin) / totalMin) * 100);
+      const width = Math.max(2, ((endMin - startMin) / totalMin) * 100);
+      barsHTML = `<div class="timeline-bar type-${type}" style="left: ${left}%; width: ${width}%;"
+               title="${v.id}: ${v.start}-${v.end} ${v.opCode} (${v.mileage} km)">
+            ${width > 8 ? v.opCode : ''}
+          </div>`;
+    }
 
     return `
       <div class="timeline-row">
-        <div class="timeline-row-label" style="color: ${ {e:'#4a90d9',emu:'#2dd4a0',dr:'#f59e0b',pp:'#a78bfa',ck:'#f472b6'}[type] || '#888' }">${v.id}</div>
+        <div class="timeline-row-label" style="color: ${colorMap[type] || '#888'}">${v.id}</div>
         <div class="timeline-row-track">
-          <div class="timeline-bar type-${type}" style="left: ${left}%; width: ${width}%;"
-               title="${v.id}: ${v.start}-${v.end} (${v.mileage} km)">
-            ${width > 8 ? v.opCode : ''}
-          </div>
+          ${barsHTML}
         </div>
       </div>
     `;
@@ -2718,6 +3577,18 @@ function applyFilter() {
   renderOpCodes(data);
   updateControlCounts(data);
   renderDepotInfo(data);
+  // Re-draw current time red line after timeline re-render
+  if (typeof renderCurrentTimeLine === 'function') renderCurrentTimeLine();
+  // Update anomaly count badge
+  const anomalyCount = data.filter(v => hasOpDayAnomaly(v)).length;
+  const countEl = document.getElementById('anomalyCount');
+  countEl.textContent = anomalyCount > 0 ? anomalyCount : '';
+  document.getElementById('anomalyFilter').style.display = anomalyCount > 0 ? '' : 'none';
+  // Update fault count badge
+  const faultCount = data.filter(v => hasTodayFault(v)).length;
+  const faultCountEl = document.getElementById('faultCount');
+  faultCountEl.textContent = faultCount > 0 ? faultCount : '';
+  document.getElementById('faultFilterBtn').style.display = faultCount > 0 ? '' : 'none';
 }
 
 // ═══════════════════════════════════════════
@@ -2806,6 +3677,24 @@ async function loadData() {
     }
 
     renderAll();
+
+    // Fetch fault summaries in background (non-blocking)
+    if (cachedVehicles.length > 0 && VDASH_CONFIG.mode === 'api') {
+      const vehicleIds = cachedVehicles.map(v => v.assetnum || v.id).slice(0, 50);
+      fetch(`${VDASH_CONFIG.api.baseUrl}/fault-summary-batch?vehicles=${encodeURIComponent(vehicleIds.join(','))}&days=0`)
+        .then(r => r.json())
+        .then(resp => {
+          if (resp.data) {
+            cachedFaultSummary = resp.data;
+            // Re-render cards and update fault filter badge
+            renderVehicleCards(cachedVehicles);
+            const faultCount = cachedVehicles.filter(v => hasTodayFault(v)).length;
+            document.getElementById('faultCount').textContent = faultCount > 0 ? faultCount : '';
+            document.getElementById('faultFilterBtn').style.display = faultCount > 0 ? '' : 'none';
+          }
+        })
+        .catch(e => console.warn('[index] fault-summary-batch failed:', e.message));
+    }
   } catch (err) {
     console.error('[index] loadData error:', err);
     showError('vehiclesGrid', '載入資料失敗：' + err.message, loadData);
@@ -2933,20 +3822,42 @@ document.querySelectorAll('.chip').forEach(chip => {
     overlay.classList.add('open');
   }
 
+  function showReserveList(title) {
+    const data = filterData(cachedVehicles).filter(v => getVehicleStatus(v) !== 'running');
+    titleEl.textContent = title;
+    countEl.textContent = `共 ${data.length} 組`;
+    bodyEl.innerHTML = buildTable([
+      { label: '車號', render: v => `<a href="vehicle-history.html?id=${v.assetnum || v.id}" style="color:var(--accent-copper)">${v.id}</a>` },
+      { label: '車型', render: v => typeDot(v) },
+      { label: '運用號碼', render: v => v.opCode },
+      { label: '狀態', render: v => {
+        const s = getVehicleStatus(v);
+        const map = {'not-started':'未出發','completed':'已完成','running':'運行中'};
+        return `<span style="color:${s==='completed'?'var(--color-emu)':s==='not-started'?'var(--text-muted)':'var(--accent-copper)'}">${map[s]||s}</span>`;
+      }},
+      { label: '起迄時間', render: v => `${v.start || '--:--'} → ${v.end || '--:--'}` },
+      { label: '車次數', cls: 'num', render: v => v.trains.length },
+    ], data);
+    overlay.classList.add('open');
+  }
+
   const cards = document.querySelectorAll('.summary-card');
   if (cards[0]) cards[0].addEventListener('click', () => showVehicleList('投入編組明細'));
-  if (cards[1]) cards[1].addEventListener('click', () => showMileageList('里程排行明細'));
-  if (cards[2]) cards[2].addEventListener('click', () => showTrainList('運行車次明細'));
-  if (cards[3]) cards[3].addEventListener('click', () => showMileageList('平均里程明細'));
+  if (cards[1]) cards[1].addEventListener('click', () => showReserveList('預備車明細'));
+  if (cards[2]) cards[2].addEventListener('click', () => showMileageList('里程排行明細'));
+  if (cards[3]) cards[3].addEventListener('click', () => showTrainList('運行車次明細'));
+  if (cards[4]) cards[4].addEventListener('click', () => showMileageList('平均里程明細'));
 })();
 
 // ═══════════════════════════════════════════
-// VEHICLE SEARCH
+// VEHICLE SEARCH (multi-mode: vehicle / train / station)
 // ═══════════════════════════════════════════
 (function() {
   const input = document.getElementById('vehicleSearchInput');
   const clearBtn = document.getElementById('vehicleSearchClear');
   const countEl = document.getElementById('vehicleSearchCount');
+  const modeTabs = document.getElementById('searchModeTabs');
+  const placeholders = { vehicle: '搜尋車號...', opcode: '搜尋運用號...', train: '搜尋車次...', station: '搜尋車站...' };
 
   function updateSearch() {
     vehicleSearchQuery = input.value.trim();
@@ -2959,11 +3870,94 @@ document.querySelectorAll('.chip').forEach(chip => {
     applyFilter();
   }
 
+  // Search mode tab switching
+  modeTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.search-mode-tab');
+    if (!tab) return;
+    const mode = tab.dataset.mode;
+    if (mode === searchMode) return;
+    searchMode = mode;
+    modeTabs.querySelectorAll('.search-mode-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    input.placeholder = placeholders[mode];
+    input.value = '';
+    vehicleSearchQuery = '';
+    clearBtn.classList.remove('visible');
+    countEl.textContent = '';
+    applyFilter();
+    input.focus();
+  });
+
   input.addEventListener('input', updateSearch);
   clearBtn.addEventListener('click', () => {
     input.value = '';
     updateSearch();
     input.focus();
+  });
+
+  // Anomaly filter checkbox
+  document.getElementById('anomalyCheckbox').addEventListener('change', (e) => {
+    filterAnomalyOnly = e.target.checked;
+    applyFilter();
+  });
+
+  // Fault filter checkbox
+  document.getElementById('faultCheckbox').addEventListener('change', (e) => {
+    filterFaultOnly = e.target.checked;
+    applyFilter();
+  });
+
+  // Status group toggle
+  document.getElementById('statusGroupBtn').addEventListener('click', () => {
+    const btn = document.getElementById('statusGroupBtn');
+    if (btn.classList.contains('loading')) return;
+
+    viewByStatus = !viewByStatus;
+    if (viewByStatus) {
+      ['running', 'not-started', 'completed', 'maintenance'].forEach(s => {
+        if (statusGroupCollapsed[s] === undefined) statusGroupCollapsed[s] = true;
+      });
+    }
+
+    // Show loading state on button + grid, then render after paint
+    btn.classList.add('loading');
+    btn.querySelector('.status-group-icon').textContent = '⏳';
+    const grid = document.getElementById('vehiclesGrid');
+    grid.innerHTML = '<div class="grid-loading-overlay"><div class="grid-loading-spinner"></div><div>切換檢視中...</div></div>';
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        btn.classList.toggle('active', viewByStatus);
+        applyFilter();
+        btn.classList.remove('loading');
+        btn.querySelector('.status-group-icon').textContent = '📊';
+      }, 50);
+    });
+  });
+})();
+
+// ═══════════════════════════════════════════
+// ANOMALY TOOLTIP (global, event delegation)
+// ═══════════════════════════════════════════
+(function() {
+  const tip = document.createElement('div');
+  tip.id = 'anomalyTooltipGlobal';
+  tip.textContent = '⚠ 本日運用日有異常（含多個運用天資料）';
+  document.body.appendChild(tip);
+
+  document.addEventListener('mouseover', (e) => {
+    const card = e.target.closest('.vehicle-card.anomaly');
+    if (card) {
+      const rect = card.getBoundingClientRect();
+      tip.style.left = (rect.left + rect.width / 2 - tip.offsetWidth / 2) + 'px';
+      tip.style.top = (rect.top - 38) + 'px';
+      tip.style.display = 'block';
+    }
+  });
+  document.addEventListener('mouseout', (e) => {
+    const card = e.target.closest('.vehicle-card.anomaly');
+    if (card && !card.contains(e.relatedTarget)) {
+      tip.style.display = 'none';
+    }
   });
 })();
 
@@ -3099,13 +4093,81 @@ window.addEventListener('resize', () => {
 });
 
 // ═══════════════════════════════════════════
+// FONT SIZE TOGGLE (小/中/大)
+// ═══════════════════════════════════════════
+function applyFontSize(size) {
+  const html = document.documentElement;
+  html.classList.remove('font-sm', 'font-md', 'font-lg');
+  html.classList.add('font-' + size);
+  document.querySelectorAll('#fontSizeToggle .font-size-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-size') === size);
+  });
+}
+
+function setFontSize(size) {
+  localStorage.setItem('car-dashboard-font-size', size);
+  applyFontSize(size);
+}
+
+document.getElementById('fontSizeToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.font-size-btn');
+  if (!btn) return;
+  setFontSize(btn.getAttribute('data-size'));
+});
+
+// ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  // Global fault tooltip (appended to body to avoid backdrop-filter / transform containing block issues)
+  const faultTooltipEl = document.createElement('div');
+  faultTooltipEl.className = 'fault-tooltip';
+  faultTooltipEl.style.display = 'none';
+  document.body.appendChild(faultTooltipEl);
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (!el) return;
+    const alert = el.closest('.fault-alert');
+    if (!alert) return;
+    const html = alert.getAttribute('data-fault-tooltip');
+    if (!html) return;
+    faultTooltipEl.innerHTML = html;
+    faultTooltipEl.style.display = 'block';
+    const rect = alert.getBoundingClientRect();
+    const tw = faultTooltipEl.offsetWidth;
+    const th = faultTooltipEl.offsetHeight;
+    let left = rect.left + rect.width / 2 - tw / 2;
+    let top = rect.bottom + 8;
+    if (left < 8) left = 8;
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - 8 - tw;
+    if (top + th > window.innerHeight - 8) top = rect.top - th - 8;
+    faultTooltipEl.style.left = left + 'px';
+    faultTooltipEl.style.top = top + 'px';
+  });
+  document.addEventListener('mouseout', e => {
+    const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (!el) return;
+    const alert = el.closest('.fault-alert');
+    if (!alert) return;
+    const related = e.relatedTarget;
+    // Keep tooltip visible if mouse moved to the tooltip itself
+    if (related && (related === faultTooltipEl || faultTooltipEl.contains(related))) return;
+    faultTooltipEl.style.display = 'none';
+  });
+  // Also hide tooltip when mouse leaves the tooltip itself
+  faultTooltipEl.addEventListener('mouseleave', () => {
+    faultTooltipEl.style.display = 'none';
+  });
+
   // Apply saved theme
   const savedTheme = getTheme();
   document.documentElement.setAttribute('data-theme', savedTheme);
   document.getElementById('themeThumb').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+  // Apply saved font size (default: lg)
+  const savedFontSize = localStorage.getItem('car-dashboard-font-size') || 'lg';
+  applyFontSize(savedFontSize);
 
   // Apply saved layout
   const savedLayout = localStorage.getItem('car-dashboard-layout') || 'auto';
