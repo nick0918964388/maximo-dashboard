@@ -2776,6 +2776,7 @@ html.layout-superwide .ops-panel { min-width: 0; }
 const depotMeta = MOCK_DEPOT_META;
 let currentDepot = 'MGY00';
 let currentDate = getTodaySlash();
+let userNavigated = false; // 使用者手動切日期時，不自動跳轉
 let currentFilter = 'all';
 let vehicleSearchQuery = '';
 let searchMode = 'vehicle'; // 'vehicle' | 'opcode' | 'train' | 'station'
@@ -3658,8 +3659,8 @@ async function loadData() {
     cachedFleetSummary = summaryResp ? summaryResp.data : null;
     cachedVehicles = opsResp.data.vehicles || [];
 
-    // 本日無資料 → 自動跳到最近有資料的日期
-    if (cachedVehicles.length === 0) {
+    // 本日無資料 → 自動跳到最近有資料的日期（僅初始載入時）
+    if (cachedVehicles.length === 0 && !userNavigated) {
       try {
         const latestResp = await dataService.getLatestDataDate(currentDepot);
         const latestDate = latestResp.data.date;
@@ -3715,11 +3716,13 @@ function shiftDate(days) {
 }
 
 document.getElementById('prevDate').addEventListener('click', async () => {
+  userNavigated = true;
   currentDate = shiftDate(-1);
   await loadData();
 });
 
 document.getElementById('nextDate').addEventListener('click', async () => {
+  userNavigated = true;
   currentDate = shiftDate(1);
   await loadData();
 });
