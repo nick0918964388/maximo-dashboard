@@ -73,8 +73,8 @@ Dashboard runs as Docker containers on PCM at port 8880.
 Cloudflare Tunnel maps `https://dashboard.nickai.cc/` → `localhost:8880`.
 
 ```bash
-# 1. Sync files to PCM (IMPORTANT: --chmod ensures nginx can read files)
-rsync -avz --chmod=Du+rwx,Dgo+rx,Fu+rw,Fgo+r \
+# 1. Sync files to PCM
+rsync -avz \
   --exclude '.git' --exclude 'node_modules' --exclude '.env' \
   --exclude '__pycache__' --exclude 'tests' --exclude 'playwright.config.js' \
   --exclude 'stitch' --exclude 'autoscripts' --exclude 'docs' \
@@ -82,12 +82,16 @@ rsync -avz --chmod=Du+rwx,Dgo+rx,Fu+rw,Fgo+r \
   -e "sshpass -p 'zaq1xsW2' ssh" \
   ./ root@192.168.1.44:/root/car_statement/
 
-# 2. Rebuild and restart containers
+# 2. Fix permissions (REQUIRED — rsync from macOS creates 600 files, nginx needs read)
+sshpass -p 'zaq1xsW2' ssh root@192.168.1.44 \
+  "chmod -R a+rX /root/car_statement/"
+
+# 3. Rebuild and restart containers
 sshpass -p 'zaq1xsW2' ssh root@192.168.1.44 \
   "cd /root/car_statement && docker compose up -d --build"
 ```
 
 ### ⚠️ File Permissions
 rsync from macOS creates files with 600 (owner-only). Nginx in Docker runs as
-`nginx` user and needs read access. The `--chmod` flag above handles this.
-If files show 403, run: `chmod -R a+rX /root/car_statement/`
+`nginx` user and needs read access. Step 2 above is **mandatory** — without it
+all JS/HTML files will return 403 Forbidden.
