@@ -1035,7 +1035,7 @@ body::after {
 // STATE
 // ═══════════════════════════════════════════
 const depotMeta = MOCK_DEPOT_META;
-let currentDepot = 'all';
+let currentDepot = new URLSearchParams(window.location.search).get('depot') || 'all';
 let currentCategory = 'all'; // 'all' | 'power' | 'passenger'
 let lastResponseData = null; // cache for re-rendering on category change
 let operatingVehicleIds = new Set(); // 有實際運用的車輛 ID
@@ -1400,6 +1400,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedTheme = getTheme();
   document.documentElement.setAttribute('data-theme', savedTheme);
   document.getElementById('themeThumb').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+  // 同步 depot select 下拉選單到 URL 參數
+  const selectEl = document.getElementById('depotSelect');
+  if (currentDepot !== 'all' && selectEl) {
+    selectEl.value = currentDepot;
+  }
+
   renderAll();
 });
 </script>

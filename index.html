@@ -2530,7 +2530,7 @@ html.layout-superwide .ops-panel { min-width: 0; }
       <p class="header-subtitle">每日編組運用狀態、里程追蹤與車次動態一覽</p>
     </div>
     <div class="header-right">
-      <a href="vehicle-status.html" class="nav-link-btn" title="查看全車輛可用狀態"><span class="nav-icon">🚦</span>車輛狀態總覽</a>
+      <a href="vehicle-status.html" id="navVehicleStatus" class="nav-link-btn" title="查看全車輛可用狀態"><span class="nav-icon">🚦</span>車輛狀態總覽</a>
       <a href="train-map.html" class="nav-link-btn" title="列車動態地圖"><span class="nav-icon">🗺️</span>列車地圖</a>
       <div class="depot-select-wrapper">
         <select class="depot-select" id="depotSelect">
@@ -3602,6 +3602,10 @@ function renderAll() {
   document.getElementById('footerDate').textContent = currentDate;
   document.getElementById('footerDepot').textContent = meta.name || currentDepot;
   document.getElementById('headerBadge').textContent = (meta.name || currentDepot) + ' • 即時監控';
+
+  // 更新導航連結，帶上目前選中的 depot
+  document.getElementById('navVehicleStatus').href =
+    `vehicle-status.html?depot=${encodeURIComponent(currentDepot)}`;
 
   updateSummary(data);
   renderDonut(data);
