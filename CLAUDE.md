@@ -66,3 +66,28 @@ IBM Maximo Jython Automation Scripts (reference only, deployed to Maximo server)
 - Mock data date range centers around 2026/02/24
 - Playwright tests run against `http://localhost:8765` (Chromium only, sequential)
 - Tests are in `tests/` directory with `.spec.js` extension
+
+## Deployment (PCM: 192.168.1.44)
+
+Dashboard runs as Docker containers on PCM at port 8880.
+Cloudflare Tunnel maps `https://dashboard.nickai.cc/` → `localhost:8880`.
+
+```bash
+# 1. Sync files to PCM (IMPORTANT: --chmod ensures nginx can read files)
+rsync -avz --chmod=Du+rwx,Dgo+rx,Fu+rw,Fgo+r \
+  --exclude '.git' --exclude 'node_modules' --exclude '.env' \
+  --exclude '__pycache__' --exclude 'tests' --exclude 'playwright.config.js' \
+  --exclude 'stitch' --exclude 'autoscripts' --exclude 'docs' \
+  --exclude 'CLAUDE.md' --exclude 'DESIGN.md' --exclude 'README_DEPLOY.md' \
+  -e "sshpass -p 'zaq1xsW2' ssh" \
+  ./ root@192.168.1.44:/root/car_statement/
+
+# 2. Rebuild and restart containers
+sshpass -p 'zaq1xsW2' ssh root@192.168.1.44 \
+  "cd /root/car_statement && docker compose up -d --build"
+```
+
+### ⚠️ File Permissions
+rsync from macOS creates files with 600 (owner-only). Nginx in Docker runs as
+`nginx` user and needs read access. The `--chmod` flag above handles this.
+If files show 403, run: `chmod -R a+rX /root/car_statement/`
